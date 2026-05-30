@@ -17,11 +17,13 @@ export default function LiveProvider({ children }) {
   };
 
   const toggleCountry = (continent, country) => {
-    const key = `${continent}-${country}`;
-    setSelectedCountries((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
+    setSelectedCountries((prev) => {
+      const current = prev[continent] || [];
+      const next = current.includes(country)
+        ? current.filter((c) => c !== country)
+        : [...current, country];
+      return { ...prev, [continent]: next };
+    });
   };
 
   return (

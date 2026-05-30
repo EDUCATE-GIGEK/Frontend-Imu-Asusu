@@ -1,43 +1,49 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import LiveProvider from "./contexts/LiveContext";
 
 import AppLayout from "./pages/AppLayout";
-import Canvas from "./pages/Canvas";
 import Live from "./pages/Live";
-import GlobeLayout from "./pages/GlobeLayout";
-import ContinentLayout from "./pages/ContinentLayout";
-import CountryLayout from "./pages/CountryLayout";
+import ContinentsLayout from "./pages/ContinentsLayout";
+import CountriesLayout from "./pages/CountriesLayout";
 import MyInterests from "./pages/MyInterests";
 import MyLearning from "./pages/MyLearning";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import About from "./pages/About";
+import Places from "./pages/Places";
+import Information from "./pages/Information";
 import PageNotFound from "./pages/PageNotFound";
+
+//Info: n index route cannot have child routes. By definition, an index route is a leaf node (an end-point) that renders at the exact path of the parent. Because <Route index element={<Live />}> does not have a explicit path, it cannot cleanly pass down a nested URL context to its children.
 
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Live />} />
-        {/* <Route path="live" element={<Live />}/> */}
-        <Route path="live" element={<Live />}>
-          <Route index element={<GlobeLayout />} />
-          <Route path="globe" element={<GlobeLayout />} />
-          <Route path="continents" element={<ContinentLayout />} />
-          <Route path="countries" element={<CountryLayout />} />
-        </Route>
+      <LiveProvider>
+        <Routes>
+          {/* Solution */}
+          <Route path="/" element={<Live />}>
+            {/* This renders at / */}
+            <Route index element={<ContinentsLayout />} />
+            {/* These render at /continents and /countries */}
+            <Route path="continents" element={<ContinentsLayout />} />
+            <Route path="countries" element={<CountriesLayout />} />
+          </Route>
 
-        <Route path="app" element={<AppLayout />}>
-          <Route path="canvas" element={<Canvas />}>
+          <Route path="app" element={<AppLayout />}>
+            <Route index element={<Places />} />
+            <Route path="places" element={<Places />} />
             <Route path="my-interests" element={<MyInterests />} />
             <Route path="my-learning" element={<MyLearning />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="information" element={<Information />} />
           </Route>
-        </Route>
 
-        <Route path="login" element={<Login />} />
-        <Route path="about" element={<About />} />
-        <Route path="*" element={<PageNotFound />} />
-      </Routes>
+          <Route path="login" element={<Login />} />
+          <Route path="about" element={<About />} />
+          <Route path="*" element={<PageNotFound />} />
+        </Routes>
+      </LiveProvider>
     </BrowserRouter>
   );
 }
