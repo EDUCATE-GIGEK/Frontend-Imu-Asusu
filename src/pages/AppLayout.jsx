@@ -5,17 +5,23 @@ import { css, styled } from "styled-components";
 import tw from "tailwind-styled-components"; //this let's you use just tailwind classes without writing css in styled components.
 
 const StyledAppLayout = tw.div`
-  flex
-  items-center
-  justify-center
-  bg-gray-100
-`
+  grid
+  h-screen
+  grid-cols-[24rem_1fr]
+   grid-rows-[auto_1fr];
+ 
+`;
+const ContentWrapper = tw.div`overflow-y-auto h-screen   px-16
+  py-8
+  `;
 
 export default function AppLayout() {
   return (
     <StyledAppLayout>
       <Dashboard />
-      <Outlet />
+      <ContentWrapper>
+        <Outlet />
+      </ContentWrapper>
     </StyledAppLayout>
   );
 }

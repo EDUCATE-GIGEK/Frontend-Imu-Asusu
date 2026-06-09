@@ -2,5 +2,7 @@
 
 @theme {
   --color-grey-info-outline: #ced4da;
-  --color-grey-info-outline-500: #ced4da;
+  --color-orange-background-100: #fff4e6;
+  
+  --color-title: #63614f;
 }
