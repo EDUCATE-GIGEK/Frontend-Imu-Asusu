@@ -2,6 +2,29 @@ import { useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { LiveContext } from "../contexts/LiveContext";
 import { continentsData } from "../data/continentsData";
+import { countriesData } from "../data/countriesData";
+import tw from "tailwind-styled-components";
+
+const PageWrapper = tw.div`min-h-screen bg-gray-50 p-8 font-sans`;
+const Header = tw.div`flex items-center gap-4 mb-1`;
+const PageTitle = tw.h1`m-0 text-gray-900 text-2xl font-bold`;
+const Subtitle = tw.p`text-gray-500 mb-8`;
+const BackBtn = tw.button`bg-transparent border-2 border-gray-200 rounded-lg px-4 py-1.5 cursor-pointer text-sm text-gray-600 font-sans`;
+const ContinentList = tw.div`flex flex-col gap-6`;
+const ContinentCard = tw.div`bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm`;
+const ContinentHeader = tw.div`px-5 py-3 flex items-center gap-3`;
+const ContinentLabel = tw.span`text-base font-semibold text-gray-900`;
+const CountryGrid = tw.div`p-5 grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-2.5`;
+const NoCountries = tw.p`p-5 text-gray-500 m-0`;
+const CountryBtn = tw.button`
+  rounded-lg py-2 px-1.5 cursor-pointer text-xs text-center text-gray-900 transition-all duration-100
+  ${(p) => p.$selected ? "bg-yellow-300 border-2 border-yellow-300 font-bold shadow-md" : "bg-gray-50 border-2 border-gray-200 font-normal"}
+`;
+const NextBtn = tw.button`mt-8 bg-yellow-300 border-0 rounded-lg py-3 px-8 text-base font-bold text-gray-900 cursor-pointer shadow-md`;
+const NextBtnSpan = tw.span`font-normal`;
+
+const EmptyWrapper = tw.div`min-h-screen bg-gray-50 flex flex-col items-center justify-center font-sans gap-4`;
+const EmptyText = tw.p`text-gray-500`;
 
 export default function CountriesLayout() {
   const { selectedContinents, selectedCountries, toggleCountry } =
@@ -12,179 +35,74 @@ export default function CountriesLayout() {
 
   if (selectedContinents.length === 0) {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          background: "#f8f9fa",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          fontFamily: "sans-serif",
-          gap: "1rem",
-        }}
-      >
-        <p style={{ color: "#6c757d" }}>No continents selected.</p>
-        <button onClick={() => navigate("/")} style={backBtnStyle}>
-          ← Go back
-        </button>
-      </div>
+      <EmptyWrapper>
+        <EmptyText>No continents selected.</EmptyText>
+        <BackBtn onClick={() => navigate("/")}>← Go back</BackBtn>
+      </EmptyWrapper>
     );
   }
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#f8f9fa",
-        padding: "2rem",
-        fontFamily: "sans-serif",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "1rem",
-          marginBottom: "0.25rem",
-        }}
-      >
-        <button onClick={() => navigate("/")} style={backBtnStyle}>
-          ← Back
-        </button>
-        <h1 style={{ margin: 0, color: "#212529" }}>Select countries</h1>
-      </div>
-      <p style={{ color: "#6c757d", marginBottom: "2rem" }}>
+    <PageWrapper>
+      <Header>
+        <BackBtn onClick={() => navigate("/")}>← Back</BackBtn>
+        <PageTitle>Select countries</PageTitle>
+      </Header>
+      <Subtitle>
         Choose the countries you want to explore within each continent.
-      </p>
+      </Subtitle>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+      <ContinentList>
         {selectedContinents.map((continentId) => {
           const continent = continentsData.find((c) => c.id === continentId);
           if (!continent) return null;
 
           return (
-            <div
-              key={continentId}
-              style={{
-                background: "#ffffff",
-                borderRadius: "14px",
-                border: "1px solid #dee2e6",
-                overflow: "hidden",
-                boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-              }}
-            >
-              {/* Card header */}
-              <div
-                style={{
-                  background: continent.color,
-                  padding: "0.75rem 1.25rem",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.75rem",
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: "1.25rem",
-                    fontWeight: "800",
-                    color: "#212529",
-                  }}
-                >
-                  {continent.abbreviation}
-                </span>
-                <span
-                  style={{
-                    fontSize: "1rem",
-                    fontWeight: "600",
-                    color: "#212529",
-                  }}
-                >
-                  {continent.name}
-                </span>
-              </div>
+            <ContinentCard key={continentId}>
+              <ContinentHeader style={{ background: continent.color }}>
+                <ContinentLabel>{continent.name}</ContinentLabel>
+              </ContinentHeader>
 
-              {/* Country boxes */}
-              {continent.countries.length === 0 ? (
-                <p style={{ padding: "1.25rem", color: "#6c757d", margin: 0 }}>
-                  No countries to select.
-                </p>
-              ) : (
-                <div
-                  style={{
-                    padding: "1.25rem",
-                    display: "grid",
-                    gridTemplateColumns:
-                      "repeat(auto-fill, minmax(130px, 1fr))",
-                    gap: "0.6rem",
-                  }}
-                >
-                  {continent.countries.map((country) => {
-                    const isSelected = (selectedCountries[continentId] || []).includes(country);
-                    return (
-                      <button
-                        key={country}
-                        onClick={() => toggleCountry(continentId, country)}
-                        style={{
-                          background: isSelected ? "#ffd43b" : "#f8f9fa",
-                          border: `2px solid ${isSelected ? "#ffd43b" : "#dee2e6"}`,
-                          borderRadius: "8px",
-                          padding: "0.5rem 0.4rem",
-                          cursor: "pointer",
-                          fontSize: "0.78rem",
-                          fontWeight: isSelected ? "700" : "400",
-                          color: "#212529",
-                          textAlign: "center",
-                          boxShadow: isSelected
-                            ? "0 2px 8px rgba(255,212,59,0.35)"
-                            : "none",
-                          transition: "all 0.12s ease",
-                        }}
-                      >
-                        {country}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+              {(() => {
+                const availableCountries = countriesData.filter(
+                  (c) => c.continent_id === continentId,
+                );
+                return availableCountries.length === 0 ? (
+                  <NoCountries>No countries to select.</NoCountries>
+                ) : (
+                  <CountryGrid>
+                    {availableCountries.map((country) => {
+                      const isSelected = (
+                        selectedCountries[continentId] || []
+                      ).includes(country.name);
+                      return (
+                        <CountryBtn
+                          key={country.country_id}
+                          onClick={() =>
+                            toggleCountry(continentId, country.name)
+                          }
+                          $selected={isSelected}
+                        >
+                          {country.name}
+                        </CountryBtn>
+                      );
+                    })}
+                  </CountryGrid>
+                );
+              })()}
+            </ContinentCard>
           );
         })}
-      </div>
+      </ContinentList>
 
-      <button
-        onClick={() => navigate("/app")}
-        style={{
-          marginTop: "2rem",
-          background: "#ffd43b",
-          border: "none",
-          borderRadius: "8px",
-          padding: "0.75rem 2rem",
-          fontSize: "1rem",
-          fontWeight: "700",
-          color: "#212529",
-          cursor: "pointer",
-          boxShadow: "0 2px 8px rgba(255,212,59,0.4)",
-        }}
-      >
+      <NextBtn onClick={() => navigate("/app")}>
         Next →{" "}
         {selectedCount > 0 && (
-          <span style={{ fontWeight: "400" }}>
+          <NextBtnSpan>
             {selectedCount} countr{selectedCount > 1 ? "ies" : "y"} selected
-          </span>
+          </NextBtnSpan>
         )}
-      </button>
-    </div>
+      </NextBtn>
+    </PageWrapper>
   );
 }
-
-const backBtnStyle = {
-  background: "transparent",
-  border: "2px solid #dee2e6",
-  borderRadius: "8px",
-  padding: "0.4rem 1rem",
-  cursor: "pointer",
-  fontSize: "0.9rem",
-  color: "#495057",
-  fontFamily: "sans-serif",
-};
