@@ -39,7 +39,7 @@ function StatePage() {
     });
 
   const goToGroup = (eg) =>
-    navigate("/app/information", {
+    navigate("/app/ethnic-group", {
       state: { ethnic_group_id: eg.ethnic_group_id, state_id: stateObj.state_id, country: state.country, continent: state.continent },
     });
 

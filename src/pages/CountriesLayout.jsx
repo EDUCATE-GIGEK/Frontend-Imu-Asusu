@@ -5,26 +5,28 @@ import { continentsData } from "../data/continentsData";
 import { countriesData } from "../data/countriesData";
 import tw from "tailwind-styled-components";
 
-const PageWrapper = tw.div`min-h-screen bg-gray-50 p-8 font-sans`;
+const PageWrapper = tw.div`min-h-screen bg-orange-background-100 p-8 font-sans`;
 const Header = tw.div`flex items-center gap-4 mb-1`;
-const PageTitle = tw.h1`m-0 text-gray-900 text-2xl font-bold`;
-const Subtitle = tw.p`text-gray-500 mb-8`;
-const BackBtn = tw.button`bg-transparent border-2 border-gray-200 rounded-lg px-4 py-1.5 cursor-pointer text-sm text-gray-600 font-sans`;
+const PageTitle = tw.h1`m-0 text-title text-2xl font-bold`;
+const Subtitle = tw.p`text-title opacity-60 mb-8`;
+const BackBtn = tw.button`bg-transparent border-2 border-grey-info-outline rounded-lg px-4 py-1.5 cursor-pointer text-sm text-title hover:border-orange-400 transition-colors`;
 const ContinentList = tw.div`flex flex-col gap-6`;
-const ContinentCard = tw.div`bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm`;
+const ContinentCard = tw.div`bg-white rounded-2xl border border-grey-info-outline overflow-hidden shadow-sm`;
 const ContinentHeader = tw.div`px-5 py-3 flex items-center gap-3`;
-const ContinentLabel = tw.span`text-base font-semibold text-gray-900`;
+const ContinentLabel = tw.span`text-base font-semibold text-title`;
 const CountryGrid = tw.div`p-5 grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-2.5`;
-const NoCountries = tw.p`p-5 text-gray-500 m-0`;
+const NoCountries = tw.p`p-5 text-title opacity-60 m-0`;
 const CountryBtn = tw.button`
-  rounded-lg py-2 px-1.5 cursor-pointer text-xs text-center text-gray-900 transition-all duration-100
-  ${(p) => p.$selected ? "bg-yellow-300 border-2 border-yellow-300 font-bold shadow-md" : "bg-gray-50 border-2 border-gray-200 font-normal"}
+  rounded-lg py-2 px-1.5 cursor-pointer text-xs text-center text-title transition-all duration-100
+  ${(p) => p.$selected
+    ? "bg-orange-200 border-2 border-orange-400 font-bold shadow-sm"
+    : "bg-orange-background-100 border-2 border-grey-info-outline font-normal hover:border-orange-300"}
 `;
-const NextBtn = tw.button`mt-8 bg-yellow-300 border-0 rounded-lg py-3 px-8 text-base font-bold text-gray-900 cursor-pointer shadow-md`;
-const NextBtnSpan = tw.span`font-normal`;
+const NextBtn = tw.button`mt-8 bg-title border-0 rounded-lg py-3 px-8 text-base font-bold text-white cursor-pointer shadow-md`;
+const NextBtnSpan = tw.span`font-normal opacity-80`;
 
-const EmptyWrapper = tw.div`min-h-screen bg-gray-50 flex flex-col items-center justify-center font-sans gap-4`;
-const EmptyText = tw.p`text-gray-500`;
+const EmptyWrapper = tw.div`min-h-screen bg-orange-background-100 flex flex-col items-center justify-center font-sans gap-4`;
+const EmptyText = tw.p`text-title opacity-60`;
 
 export default function CountriesLayout() {
   const { selectedContinents, selectedCountries, toggleCountry } =

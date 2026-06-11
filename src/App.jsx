@@ -5,7 +5,7 @@ import AppLayout from "./pages/AppLayout";
 import Live from "./pages/Live";
 import ContinentsLayout from "./pages/ContinentsLayout";
 import CountriesLayout from "./pages/CountriesLayout";
-import MyInterests from "./pages/MyInterests";
+import Manuscripts from "./pages/Manuscripts";
 import MyLearning from "./pages/MyLearning";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
@@ -13,7 +13,7 @@ import About from "./pages/About";
 import CountryPage from "./pages/CountryPage";
 import StatePage from "./pages/StatePage";
 import LocalGovernmentPage from "./pages/LocalGovernmentPage";
-import Information from "./pages/Information";
+import EthnicGroupPage from "./pages/EthnicGroupPage";
 import TribePage from "./pages/TribePage";
 import PageNotFound from "./pages/PageNotFound";
 
@@ -38,9 +38,9 @@ export default function App() {
             <Route path="country" element={<CountryPage />} />
             <Route path="state" element={<StatePage />} />
             <Route path="local-government" element={<LocalGovernmentPage />} />
-            <Route path="information" element={<Information />} />
+            <Route path="ethnic-group" element={<EthnicGroupPage />} />
             <Route path="tribe" element={<TribePage />} />
-            <Route path="my-interests" element={<MyInterests />} />
+            <Route path="my-manuscripts" element={<Manuscripts />} />
             <Route path="my-learning" element={<MyLearning />} />
             <Route path="settings" element={<Settings />} />
           </Route>
