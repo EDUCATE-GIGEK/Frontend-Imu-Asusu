@@ -4,6 +4,21 @@ import { ethnicGroupData } from "@/data/ethnicGroupData";
 import GroupedList from "@/ui/GroupedList";
 import InfoOption from "@/ui/InfoOption";
 import Spacer from "@/ui/Spacer";
+import tw from "tailwind-styled-components";
+
+const StyledHeader = tw.h1`text-4xl font-bold mb-4 text-title`;
+
+const StyledDescription = tw.p`
+  bg-orange-background-100
+  rounded-md
+  px-6
+  py-4
+  h-1/5
+  mb-6
+  italic
+`;
+
+const InfoList = tw.ul`list-disc pl-6 mb-6`;
 
 function LocalGovernmentPage() {
   const { state } = useLocation();
@@ -17,24 +32,21 @@ function LocalGovernmentPage() {
   const { general_info: info } = lg;
 
   const goToGroup = (eg) =>
-    navigate("/app/information", {
+    navigate("/app/ethnic-group", {
       state: { ethnic_group_id: eg.ethnic_group_id, lg_id: lg.lg_id, state_id: state.state_id, country: state.country, continent: state.continent },
     });
 
   return (
-    <div>
-      <GroupedList label={lg.name}>
-        <p>{info.localGovernmentDescription}</p>
-      </GroupedList>
+    <>
+      <StyledHeader>{lg.name}</StyledHeader>
+      <StyledDescription>{info.localGovernmentDescription}</StyledDescription>
 
-      <GroupedList label="Overview">
-        <Spacer>
-          <InfoOption label={`${info.ethnicGroupsCount} Ethnic Groups`} />
-          <InfoOption label={`${info.tribesCount} Tribes`} />
-          <InfoOption label={`${info.endangeredGroupsCount} Endangered Groups`} />
-          <InfoOption label={`${info.endangeredLanguagesCount} Endangered Languages`} />
-        </Spacer>
-      </GroupedList>
+      <InfoList>
+        <li>{`${info.ethnicGroupsCount} Ethnic Groups`}</li>
+        <li>{`${info.tribesCount} Tribes`}</li>
+        <li>{`${info.endangeredGroupsCount} Endangered Groups`}</li>
+        <li>{`${info.endangeredLanguagesCount} Endangered Languages`}</li>
+      </InfoList>
 
       <GroupedList label="Ethnic Groups">
         <Spacer>
@@ -43,7 +55,7 @@ function LocalGovernmentPage() {
           ))}
         </Spacer>
       </GroupedList>
-    </div>
+    </>
   );
 }
 
