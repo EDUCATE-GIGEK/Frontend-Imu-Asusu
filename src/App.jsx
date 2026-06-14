@@ -3,10 +3,9 @@ import LiveProvider from "./contexts/LiveContext";
 
 import AppLayout from "./pages/AppLayout";
 import Live from "./pages/Live";
-import ContinentsLayout from "./pages/ContinentsLayout";
-import CountriesLayout from "./pages/CountriesLayout";
+import NigeriaStatesLayout from "./pages/NigeriaStatesLayout";
 import Manuscripts from "./pages/Manuscripts";
-import MyLearning from "./pages/MyLearning";
+import MyLearning from "./pages/Learning";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import About from "./pages/About";
@@ -26,15 +25,10 @@ export default function App() {
         <Routes>
           {/* Solution */}
           <Route path="/" element={<Live />}>
-            {/* This renders at / */}
-            <Route index element={<ContinentsLayout />} />
-            {/* These render at /continents and /countries */}
-            <Route path="continents" element={<ContinentsLayout />} />
-            <Route path="countries" element={<CountriesLayout />} />
+            <Route index element={<NigeriaStatesLayout />} />
           </Route>
 
           <Route path="app" element={<AppLayout />}>
-            <Route index element={<CountryPage />} />
             <Route path="country" element={<CountryPage />} />
             <Route path="state" element={<StatePage />} />
             <Route path="local-government" element={<LocalGovernmentPage />} />
