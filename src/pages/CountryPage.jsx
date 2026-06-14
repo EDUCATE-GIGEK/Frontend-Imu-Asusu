@@ -45,6 +45,8 @@ function CountryPage() {
   const states = statesData.filter((s) => s.country_id === country.country_id);
   const { general_info: info, name } = country;
 
+  const SELECTABLE = new Set(["lagos"]);
+
   const goToState = (st) =>
     navigate("/app/state", {
       state: {
@@ -73,6 +75,7 @@ function CountryPage() {
               key={st.state_id}
               label={st.name}
               onClick={() => goToState(st)}
+              disabled={!SELECTABLE.has(st.state_id)}
             />
           ))}
         </Spacer>
