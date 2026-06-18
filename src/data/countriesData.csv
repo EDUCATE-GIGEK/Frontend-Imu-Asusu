@@ -1,0 +1,2 @@
+country_name,id,continent_id,iso_code,general_info
+Nigeria,1,1,NG,"{""countryDescription"": ""Most populous country in Africa with over 200 million people and 250+ ethnic groups."", ""statesCount"": 36, ""localGovernmentsCount"": 774, ""ethnicGroupsCount"": 250, ""endangeredGroupsCount"": 5, ""endangeredLanguagesCount"": ""~30""}"

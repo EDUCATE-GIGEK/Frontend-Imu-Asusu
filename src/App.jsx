@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import LiveProvider from "./contexts/LiveContext";
-
+import { AuthProvider } from "./contexts/AuthContext";
 import AppLayout from "./pages/AppLayout";
 import Live from "./pages/Live";
 import NigeriaStatesLayout from "./pages/NigeriaStatesLayout";
@@ -16,14 +15,11 @@ import EthnicGroupPage from "./pages/EthnicGroupPage";
 import TribePage from "./pages/TribePage";
 import PageNotFound from "./pages/PageNotFound";
 
-//Info: n index route cannot have child routes. By definition, an index route is a leaf node (an end-point) that renders at the exact path of the parent. Because <Route index element={<Live />}> does not have a explicit path, it cannot cleanly pass down a nested URL context to its children.
-
 export default function App() {
   return (
     <BrowserRouter>
-      <LiveProvider>
+      <AuthProvider>
         <Routes>
-          {/* Solution */}
           <Route path="/" element={<Live />}>
             <Route index element={<NigeriaStatesLayout />} />
           </Route>
@@ -43,7 +39,7 @@ export default function App() {
           <Route path="about" element={<About />} />
           <Route path="*" element={<PageNotFound />} />
         </Routes>
-      </LiveProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 }
