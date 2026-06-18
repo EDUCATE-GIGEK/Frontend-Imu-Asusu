@@ -1,19 +1,13 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { countriesData } from "@/data/countriesData";
-import { statesData } from "@/data/statesData";
+import { useQuery } from "@tanstack/react-query";
+import { getCountryByName } from "@/services/apiCountries";
+import { getStatesByCountry } from "@/services/apiStates";
 import GroupedList from "@/ui/GroupedList";
 import InfoOption from "@/ui/InfoOption";
 import Spacer from "@/ui/Spacer";
-import { css, styled } from "styled-components";
 import tw from "tailwind-styled-components";
 
-const StyledHeader = tw.h1`
-  text-4xl
-  font-bold
-  mb-4
-  text-title
-`;
-
+const StyledHeader = tw.h1`text-4xl font-bold mb-4 text-title`;
 const StyledDescription = tw.p`
   bg-orange-background-100
   rounded-md
@@ -23,59 +17,59 @@ const StyledDescription = tw.p`
   mb-6
   italic
 `;
+const InfoList = tw.ul`list-disc pl-6 mb-6`;
 
-const InfoList = tw.ul`
-  list-disc
-  pl-6
-  mb-6
-`;
+const SELECTABLE = new Set(["Lagos"]);
 
 function CountryPage() {
   const { state } = useLocation();
   const navigate = useNavigate();
 
-  const country = state
-    ? countriesData.find(
-        (c) => c.name === state.country && c.continent_id === state.continent,
-      )
-    : null;
+  const countryName = state?.country ?? null;
 
-  if (!country) return <div>Select a country from the sidebar.</div>;
+  const { data: country, isLoading: loadingCountry } = useQuery({
+    queryKey: ["country", countryName],
+    queryFn: () => getCountryByName(countryName),
+    enabled: !!countryName,
+  });
 
-  const states = statesData.filter((s) => s.country_id === country.country_id);
-  const { general_info: info, name } = country;
+  const { data: states = [], isLoading: loadingStates } = useQuery({
+    queryKey: ["states", "country", country?.id],
+    queryFn: () => getStatesByCountry(country.id),
+    enabled: !!country?.id,
+  });
 
-  const SELECTABLE = new Set(["lagos"]);
+  if (!countryName) return <div>Select a country from the sidebar.</div>;
+  if (loadingCountry || loadingStates) return <div>Loading…</div>;
+  if (!country) return <div>Country not found.</div>;
+
+  const { general_info: info, country_name: name } = country;
 
   const goToState = (st) =>
     navigate("/app/state", {
-      state: {
-        state_id: st.state_id,
-        country: country.name,
-        continent: state.continent,
-      },
+      state: { stateId: st.id, countryId: country.id },
     });
 
   return (
     <>
       <StyledHeader>{name}</StyledHeader>
-      <StyledDescription>{info.countryDescription}</StyledDescription>
+      <StyledDescription>{info?.countryDescription}</StyledDescription>
 
       <InfoList>
-        <li>{`${info.statesCount} States`} </li>
-        <li>{`${info.localGovernmentsCount} Local Governments`} </li>
-        <li>{`${info.ethnicGroupsCount} Ethnic Groups`} </li>
-        <li>{`${info.endangeredGroupsCount} Endangered Groups`} </li>
+        <li>{`${info?.statesCount} States`}</li>
+        <li>{`${info?.localGovernmentsCount} Local Governments`}</li>
+        <li>{`${info?.ethnicGroupsCount} Ethnic Groups`}</li>
+        <li>{`${info?.endangeredGroupsCount} Endangered Groups`}</li>
       </InfoList>
 
       <GroupedList label="States">
         <Spacer>
           {states.map((st) => (
             <InfoOption
-              key={st.state_id}
-              label={st.name}
+              key={st.id}
+              label={st.state_name}
               onClick={() => goToState(st)}
-              disabled={!SELECTABLE.has(st.state_id)}
+              disabled={!SELECTABLE.has(st.state_name)}
             />
           ))}
         </Spacer>

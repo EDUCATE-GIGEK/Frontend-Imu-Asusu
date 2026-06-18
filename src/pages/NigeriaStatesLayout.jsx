@@ -1,5 +1,7 @@
 import { useNavigate } from "react-router-dom";
-import { statesData } from "../data/statesData";
+import { useQuery } from "@tanstack/react-query";
+import { getCountryByName } from "@/services/apiCountries";
+import { getStatesByCountry } from "@/services/apiStates";
 import tw from "tailwind-styled-components";
 
 const PageWrapper = tw.div`min-h-screen bg-orange-background-100 p-8 font-sans`;
@@ -15,17 +17,29 @@ const StateBtn = tw.button`
 const StateName = tw.div`text-sm text-title mt-1 font-medium`;
 const ComingSoon = tw.span`block text-[10px] text-title opacity-40 mt-1`;
 
-const nigerianStates = statesData.filter((s) => s.country_id === "nigeria");
-const SELECTABLE = new Set(["lagos"]);
+const SELECTABLE = new Set(["Lagos"]);
 
 export default function NigeriaStatesLayout() {
   const navigate = useNavigate();
 
+  const { data: country } = useQuery({
+    queryKey: ["country", "Nigeria"],
+    queryFn: () => getCountryByName("Nigeria"),
+  });
+
+  const { data: states = [], isLoading } = useQuery({
+    queryKey: ["states", "country", country?.id],
+    queryFn: () => getStatesByCountry(country.id),
+    enabled: !!country?.id,
+  });
+
   const goToState = (stateObj) => {
     navigate("/app/state", {
-      state: { state_id: stateObj.state_id, country: "Nigeria", continent: "africa" },
+      state: { stateId: stateObj.id, countryId: stateObj.country_id },
     });
   };
+
+  if (isLoading) return <PageWrapper><p>Loading states…</p></PageWrapper>;
 
   return (
     <PageWrapper>
@@ -33,15 +47,15 @@ export default function NigeriaStatesLayout() {
       <Subtitle>Select a state to begin exploring its local governments, ethnic groups, and more.</Subtitle>
 
       <Grid>
-        {nigerianStates.map((stateObj) => {
-          const selectable = SELECTABLE.has(stateObj.state_id);
+        {states.map((stateObj) => {
+          const selectable = SELECTABLE.has(stateObj.state_name);
           return (
             <StateBtn
-              key={stateObj.state_id}
+              key={stateObj.id}
               onClick={() => selectable && goToState(stateObj)}
               $disabled={!selectable}
             >
-              <StateName>{stateObj.name}</StateName>
+              <StateName>{stateObj.state_name}</StateName>
               {!selectable && <ComingSoon>Coming soon</ComingSoon>}
             </StateBtn>
           );
