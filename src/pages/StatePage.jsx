@@ -1,12 +1,10 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { getState } from "@/services/apiStates";
-import { getLGsByState } from "@/services/apiLocalGovernments";
-import { getEthnicGroupsByState } from "@/services/apiEthnicGroups";
+import useStatePage from "@/hooks/useStatePage";
 import GroupedList from "@/ui/GroupedList";
 import InfoOption from "@/ui/InfoOption";
 import Spacer from "@/ui/Spacer";
 import tw from "tailwind-styled-components";
+import Spinner from "@/ui/Spinner";
 
 const StyledHeader = tw.h1`text-4xl font-bold mb-4 text-title`;
 const StyledDescription = tw.p`
@@ -26,26 +24,11 @@ function StatePage() {
 
   const stateId = state?.stateId ?? null;
 
-  const { data: stateObj, isLoading: loadingState } = useQuery({
-    queryKey: ["state", stateId],
-    queryFn: () => getState(stateId),
-    enabled: !!stateId,
-  });
-
-  const { data: lgs = [], isLoading: loadingLGs } = useQuery({
-    queryKey: ["lgs", stateId],
-    queryFn: () => getLGsByState(stateId),
-    enabled: !!stateId,
-  });
-
-  const { data: groups = [], isLoading: loadingGroups } = useQuery({
-    queryKey: ["ethnicGroups", "state", stateId],
-    queryFn: () => getEthnicGroupsByState(stateId),
-    enabled: !!stateId,
-  });
+  const { stateObj, loadingState, lgs, loadingLGs, egs, loadingEGs } =
+    useStatePage(stateId);
 
   if (!stateId) return <div>No state selected.</div>;
-  if (loadingState || loadingLGs || loadingGroups) return <div>Loading…</div>;
+  if (loadingState || loadingLGs || loadingEGs) return <Spinner />;
   if (!stateObj) return <div>State not found.</div>;
 
   const { general_info: info, state_name } = stateObj;
@@ -75,15 +58,23 @@ function StatePage() {
       <GroupedList label="Local Governments">
         <Spacer>
           {lgs.map((lg) => (
-            <InfoOption key={lg.id} label={lg.name} onClick={() => goToLG(lg)} />
+            <InfoOption
+              key={lg.id}
+              label={lg.name}
+              onClick={() => goToLG(lg)}
+            />
           ))}
         </Spacer>
       </GroupedList>
 
       <GroupedList label="Ethnic Groups">
         <Spacer>
-          {groups.map((eg) => (
-            <InfoOption key={eg.id} label={eg.name} onClick={() => goToGroup(eg)} />
+          {egs.map((eg) => (
+            <InfoOption
+              key={eg.id}
+              label={eg.name}
+              onClick={() => goToGroup(eg)}
+            />
           ))}
         </Spacer>
       </GroupedList>

@@ -1,6 +1,5 @@
 import { useLocation } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { getTribe } from "@/services/apiTribes";
+import useTribePage from "@/hooks/useTribePage";
 import GroupedList from "@/ui/GroupedList";
 import InfoOption from "@/ui/InfoOption";
 import Spacer from "@/ui/Spacer";
@@ -24,14 +23,10 @@ function TribePage() {
 
   const tribeId = state?.tribeId ?? null;
 
-  const { data: tribe, isLoading } = useQuery({
-    queryKey: ["tribe", tribeId],
-    queryFn: () => getTribe(tribeId),
-    enabled: !!tribeId,
-  });
+  const { tribe, loadingTribe } = useTribePage(tribeId);
 
   if (!tribeId) return <div>No tribe selected.</div>;
-  if (isLoading) return <div>Loading…</div>;
+  if (loadingTribe) return <div>Loading…</div>;
   if (!tribe) return <div>Tribe not found.</div>;
 
   const { general_info: info } = tribe;

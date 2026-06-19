@@ -1,7 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { getLocalGovernment } from "@/services/apiLocalGovernments";
-import { getEthnicGroupsByLG } from "@/services/apiEthnicGroups";
+import useLocalGovernmentPage from "@/hooks/useLocalGovernmentPage";
 import GroupedList from "@/ui/GroupedList";
 import InfoOption from "@/ui/InfoOption";
 import Spacer from "@/ui/Spacer";
@@ -25,17 +23,7 @@ function LocalGovernmentPage() {
 
   const lgId = state?.lgId ?? null;
 
-  const { data: lg, isLoading: loadingLG } = useQuery({
-    queryKey: ["lg", lgId],
-    queryFn: () => getLocalGovernment(lgId),
-    enabled: !!lgId,
-  });
-
-  const { data: groups = [], isLoading: loadingGroups } = useQuery({
-    queryKey: ["ethnicGroups", "lg", lgId],
-    queryFn: () => getEthnicGroupsByLG(lgId),
-    enabled: !!lgId,
-  });
+  const { lg, loadingLG, groups, loadingGroups } = useLocalGovernmentPage(lgId);
 
   if (!lgId) return <div>No local government selected.</div>;
   if (loadingLG || loadingGroups) return <div>Loading…</div>;

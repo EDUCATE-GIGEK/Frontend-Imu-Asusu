@@ -2,7 +2,7 @@ import supabase from "./supabase";
 
 export async function getAllHistory() {
   const { data, error } = await supabase
-    .from("cultural_history")
+    .from("history")
     .select("*")
     .order("category");
   if (error) throw new Error(error.message);
@@ -11,7 +11,7 @@ export async function getAllHistory() {
 
 export async function getHistoryByEthnicGroup(ethnicGroupId) {
   const { data, error } = await supabase
-    .from("cultural_history")
+    .from("history")
     .select("*")
     .eq("ethnic_group_id", ethnicGroupId)
     .order("category");
