@@ -1,11 +1,9 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { getEthnicGroup } from "@/services/apiEthnicGroups";
-import { getTribesByEthnicGroup } from "@/services/apiTribes";
-import { getHistoryByEthnicGroup } from "@/services/apiHistory";
+import useEthnicGroupPage from "@/hooks/useEthnicGroupPage";
 import GroupedList from "@/ui/GroupedList";
 import InfoOption from "@/ui/InfoOption";
 import Spacer from "@/ui/Spacer";
+import HistoryCard from "@/features/EthnicGroupPage/HistoryCard";
 import tw from "tailwind-styled-components";
 
 const StyledHeader = tw.h1`text-4xl font-bold mb-4 text-title`;
@@ -27,23 +25,8 @@ function EthnicGroupPage() {
 
   const ethnicGroupId = state?.ethnicGroupId ?? null;
 
-  const { data: eg, isLoading: loadingEG } = useQuery({
-    queryKey: ["ethnicGroup", ethnicGroupId],
-    queryFn: () => getEthnicGroup(ethnicGroupId),
-    enabled: !!ethnicGroupId,
-  });
-
-  const { data: tribes = [], isLoading: loadingTribes } = useQuery({
-    queryKey: ["tribes", ethnicGroupId],
-    queryFn: () => getTribesByEthnicGroup(ethnicGroupId),
-    enabled: !!ethnicGroupId,
-  });
-
-  const { data: history = [], isLoading: loadingHistory } = useQuery({
-    queryKey: ["history", ethnicGroupId],
-    queryFn: () => getHistoryByEthnicGroup(ethnicGroupId),
-    enabled: !!ethnicGroupId,
-  });
+  const { eg, loadingEG, tribes, loadingTribes, history, loadingHistory } =
+    useEthnicGroupPage(ethnicGroupId);
 
   if (!ethnicGroupId) return <div>No ethnic group selected.</div>;
   if (loadingEG || loadingTribes || loadingHistory) return <div>Loading…</div>;
@@ -94,15 +77,11 @@ function EthnicGroupPage() {
 
       {history.length > 0 && (
         <GroupedList label="History">
-          <Spacer>
+          <div className="mt-2">
             {history.map((h) => (
-              <div key={h.id}>
-                <h1>{h.category}</h1>
-                <h3>{h.subject_name}</h3>
-                <p>{h.subject_description}</p>
-              </div>
+              <HistoryCard key={h.id} h={h} />
             ))}
-          </Spacer>
+          </div>
         </GroupedList>
       )}
     </>

@@ -1,8 +1,6 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import AppLayout from "./pages/AppLayout";
-import Live from "./pages/Live";
-import NigeriaStatesLayout from "./pages/NigeriaStatesLayout";
 import Manuscripts from "./pages/Manuscripts";
 import MyLearning from "./pages/Learning";
 import Settings from "./pages/Settings";
@@ -20,9 +18,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          <Route path="/" element={<Live />}>
-            <Route index element={<NigeriaStatesLayout />} />
-          </Route>
+          <Route path="/" element={<Navigate to="/app/country" replace />} />
 
           <Route path="app" element={<AppLayout />}>
             <Route path="country" element={<CountryPage />} />

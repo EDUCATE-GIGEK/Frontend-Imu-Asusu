@@ -1,23 +1,30 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { getCountryByName } from "@/services/apiCountries";
-import { getStatesByCountry } from "@/services/apiStates";
-import GroupedList from "@/ui/GroupedList";
-import InfoOption from "@/ui/InfoOption";
-import Spacer from "@/ui/Spacer";
+import useCountryPage from "@/hooks/useCountryPage";
 import tw from "tailwind-styled-components";
 
+const PageWrapper = tw.div`p-8`;
 const StyledHeader = tw.h1`text-4xl font-bold mb-4 text-title`;
 const StyledDescription = tw.p`
   bg-orange-background-100
   rounded-md
   px-6
   py-4
-  h-1/5
   mb-6
   italic
 `;
-const InfoList = tw.ul`list-disc pl-6 mb-6`;
+const InfoList = tw.ul`list-disc pl-6 mb-8`;
+const SectionLabel = tw.p`text-xs font-semibold text-title opacity-40 uppercase tracking-widest mb-4`;
+
+const Grid = tw.div`grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3 max-w-3xl`;
+const StateBtn = tw.button`
+  border-2 rounded-xl py-6 px-4 text-center transition-all duration-150
+  ${(p) =>
+    p.$disabled
+      ? "opacity-40 cursor-not-allowed bg-white border-grey-info-outline"
+      : "cursor-pointer bg-white border-grey-info-outline shadow-sm hover:border-orange-300"}
+`;
+const StateName = tw.div`text-sm text-title font-medium`;
+const ComingSoon = tw.span`block text-[10px] text-title opacity-40 mt-1`;
 
 const SELECTABLE = new Set(["Lagos"]);
 
@@ -25,23 +32,12 @@ function CountryPage() {
   const { state } = useLocation();
   const navigate = useNavigate();
 
-  const countryName = state?.country ?? null;
+  const countryName = state?.country ?? "Nigeria";
 
-  const { data: country, isLoading: loadingCountry } = useQuery({
-    queryKey: ["country", countryName],
-    queryFn: () => getCountryByName(countryName),
-    enabled: !!countryName,
-  });
+  const { country, loadingCountry, states, loadingStates } = useCountryPage(countryName);
 
-  const { data: states = [], isLoading: loadingStates } = useQuery({
-    queryKey: ["states", "country", country?.id],
-    queryFn: () => getStatesByCountry(country.id),
-    enabled: !!country?.id,
-  });
-
-  if (!countryName) return <div>Select a country from the sidebar.</div>;
-  if (loadingCountry || loadingStates) return <div>Loading…</div>;
-  if (!country) return <div>Country not found.</div>;
+  if (loadingCountry || loadingStates) return <PageWrapper><p>Loading…</p></PageWrapper>;
+  if (!country) return <PageWrapper><p>Country not found.</p></PageWrapper>;
 
   const { general_info: info, country_name: name } = country;
 
@@ -51,7 +47,7 @@ function CountryPage() {
     });
 
   return (
-    <>
+    <PageWrapper>
       <StyledHeader>{name}</StyledHeader>
       <StyledDescription>{info?.countryDescription}</StyledDescription>
 
@@ -62,19 +58,23 @@ function CountryPage() {
         <li>{`${info?.endangeredGroupsCount} Endangered Groups`}</li>
       </InfoList>
 
-      <GroupedList label="States">
-        <Spacer>
-          {states.map((st) => (
-            <InfoOption
+      <SectionLabel>Select a state</SectionLabel>
+      <Grid>
+        {states.map((st) => {
+          const selectable = SELECTABLE.has(st.state_name);
+          return (
+            <StateBtn
               key={st.id}
-              label={st.state_name}
-              onClick={() => goToState(st)}
-              disabled={!SELECTABLE.has(st.state_name)}
-            />
-          ))}
-        </Spacer>
-      </GroupedList>
-    </>
+              onClick={() => selectable && goToState(st)}
+              $disabled={!selectable}
+            >
+              <StateName>{st.state_name}</StateName>
+              {!selectable && <ComingSoon>Coming soon</ComingSoon>}
+            </StateBtn>
+          );
+        })}
+      </Grid>
+    </PageWrapper>
   );
 }
 

@@ -1,5 +1,5 @@
-1. Make delete API
-2. Put all the Query logic in features folder
-3. Pass data from features to pages
+1. Figure out overall styling of application
+2. Apply login feature
+3. Learn how to use react-hook-form to indicate when a manuscript is created, edited, or deleted
 4. Modify vsison statement and Github repo
-5. Learn how to use react-hook-form
+5. Start working on timelines next week wednesday
