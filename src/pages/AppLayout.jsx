@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Dashboard from "@/features/AppLayout/Dashboard";
-import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import { Outlet, useNavigate, useLocation, Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import tw from "tailwind-styled-components";
 
 const StyledAppLayout = tw.div`
@@ -14,6 +15,7 @@ export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
 
   const showBack = location.pathname !== "/app/country";
 
@@ -21,16 +23,24 @@ export default function AppLayout() {
     <StyledAppLayout $collapsed={collapsed}>
       <Dashboard collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} />
       <ContentWrapper>
-        {showBack && (
-          <div className="flex justify-end mb-4">
+        <div className="flex justify-end items-center gap-4 mb-4">
+          {showBack && (
             <button
               onClick={() => navigate(-1)}
-              className="text-sm text-title opacity-50 hover:opacity-100 transition-opacity flex items-center gap-1"
+              className="text-sm text-title opacity-50 hover:opacity-100 transition-opacity"
             >
               ← Back
             </button>
-          </div>
-        )}
+          )}
+          {!user && (
+            <Link
+              to="/login"
+              className="text-sm font-semibold text-title border-2 border-grey-info-outline rounded-lg px-4 py-1.5 hover:border-orange-300 transition-colors"
+            >
+              Log in
+            </Link>
+          )}
+        </div>
         <Outlet />
       </ContentWrapper>
     </StyledAppLayout>
