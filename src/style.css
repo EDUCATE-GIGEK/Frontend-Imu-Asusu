@@ -1,8 +1,22 @@
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap");
+
 @import "tailwindcss";
 
 @theme {
   --color-grey-info-outline: #ced4da;
   --color-orange-background-100: #fff4e6;
-  
   --color-title: #63614f;
+
+  --font-heading: "Playfair Display", Georgia, serif;
+  --font-body: "Lato", system-ui, sans-serif;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-body);
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-heading);
+  }
 }
