@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import supabase from "@/services/supabase";
+import { getSession } from "@/services/auth/getSession";
+import { onAuthStateChange } from "@/services/auth/onAuthStateChange";
+import { getUserProfile } from "@/services/auth/getUserProfile";
 
 const AuthContext = createContext(null);
 
@@ -8,9 +10,9 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
+    getSession().then(setSession);
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const subscription = onAuthStateChange((_event, session) => {
       setSession(session);
     });
 
@@ -19,12 +21,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (!session?.user?.id) { setProfile(null); return; }
-    supabase
-      .from("user")
-      .select("*")
-      .eq("auth_id", session.user.id)
-      .single()
-      .then(({ data }) => setProfile(data ?? null));
+    getUserProfile(session.user.id).then(setProfile).catch(() => setProfile(null));
   }, [session]);
 
   return (

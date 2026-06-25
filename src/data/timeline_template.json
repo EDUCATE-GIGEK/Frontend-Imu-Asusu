@@ -1,0 +1,67 @@
+[
+  {
+    "id": "ikwerre-language-evolution",
+    "title": "Evolution of Ikwerre Language",
+    "people_group": "Ikwerre",
+    "aspect": "Language",
+    "location": "Rivers State, Nigeria",
+    "description": "How the Ikwerre language has been shaped by contact with neighbouring and colonial groups over centuries, and its ongoing struggle against extinction.",
+    "date_range": { "start": 1300, "end": 2000 },
+    "entries": [
+      {
+        "id": 1,
+        "year": 1300,
+        "era": "Pre-colonial",
+        "title": "Formation of a distinct Ikwerre dialect",
+        "description": "Ikwerre develops as a dialect distinct from central Igbo, shaped by the geography and isolation of the Niger Delta region. Oral traditions and community governance are encoded entirely in the language.",
+        "influencing_groups": [],
+        "influence_type": null
+      },
+      {
+        "id": 2,
+        "year": 1700,
+        "era": "Trade Era",
+        "title": "Contact with Ijaw traders",
+        "description": "Regular trade with Ijaw communities along the waterways introduces loanwords related to fishing, canoe-building, and river commerce into everyday Ikwerre speech.",
+        "influencing_groups": ["Ijaw"],
+        "influence_type": "Trade"
+      },
+      {
+        "id": 3,
+        "year": 1850,
+        "era": "Early Colonial",
+        "title": "Missionary contact and written literacy",
+        "description": "British missionaries introduce written forms of language and translate religious texts. English loanwords enter Ikwerre through church and school, restructuring the relationship between oral and written knowledge.",
+        "influencing_groups": ["British", "Church Missionary Society"],
+        "influence_type": "Colonial / Religious"
+      },
+      {
+        "id": 4,
+        "year": 1914,
+        "era": "Colonial Administration",
+        "title": "Amalgamation and administrative Igbo",
+        "description": "British colonial administration groups Ikwerre under Igbo-speaking governance structures, causing Ikwerre communities to adopt Igbo in formal and administrative contexts.",
+        "influencing_groups": ["British Colonial Administration", "Igbo"],
+        "influence_type": "Political"
+      },
+      {
+        "id": 5,
+        "year": 1967,
+        "era": "Biafran War",
+        "title": "Biafran conflict deepens Igbo imposition",
+        "description": "The Biafra conflict forces Ikwerre communities into a political alignment that accelerates Igbo language adoption at the expense of Ikwerre, as Ikwerre identity is subsumed under Igbo ethnicity.",
+        "influencing_groups": ["Igbo", "Nigerian Federal Government"],
+        "influence_type": "Military / Political"
+      },
+      {
+        "id": 6,
+        "year": 1990,
+        "era": "Post-independence",
+        "title": "English dominance in education",
+        "description": "National education policy mandates English as the language of instruction from secondary school onward. A generation of Ikwerre children grows up speaking English and Igbo, with Ikwerre confined to the home.",
+        "influencing_groups": ["Nigerian Federal Government"],
+        "influence_type": "Political"
+      }
+    ]
+  }
+]
