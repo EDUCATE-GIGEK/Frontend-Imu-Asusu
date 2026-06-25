@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import tw from "tailwind-styled-components";
 import { signInWithOAuth } from "@/services/auth/signInWithOAuth";
 import { signInWithPassword } from "@/services/auth/signInWithPassword";
+import { signUp } from "@/services/auth/signUp";
 
 const COUNTRIES = [
   "Nigeria", "Ghana", "Kenya", "South Africa", "United Kingdom",
@@ -32,7 +33,7 @@ const StyledInput = tw.input`
   focus:border-orange-300 focus:outline-none transition-colors
 `;
 const ErrorText = tw.p`mt-1 text-xs text-red-500`;
-const SignInBtn = tw.button`
+const SubmitBtn = tw.button`
   w-full rounded-xl bg-title px-4 py-3
   text-sm font-semibold text-white
   hover:opacity-90 transition-opacity disabled:opacity-50
@@ -47,18 +48,43 @@ const GoogleBtn = tw.button`
   hover:border-orange-300 hover:bg-orange-background-100 transition-all
 `;
 const ServerError = tw.p`text-xs text-red-500 text-center`;
+const ToggleRow = tw.p`mt-5 text-center text-xs text-title opacity-50`;
+const ToggleBtn = tw.button`font-semibold text-title opacity-100 underline underline-offset-2 bg-transparent border-none cursor-pointer text-xs`;
+const VerifyWrapper = tw.div`text-center space-y-3`;
+const VerifyTitle = tw.h2`font-heading text-2xl font-bold text-title`;
+const VerifyText = tw.p`text-sm text-title opacity-60 leading-relaxed`;
 
 export default function Login() {
   const navigate = useNavigate();
+  const [mode, setMode] = useState("signin");
   const [serverError, setServerError] = useState("");
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm();
 
-  async function onEmailSubmit({ email, password, country, name }) {
+  function switchMode(next) {
+    setMode(next);
+    setServerError("");
+    reset();
+  }
+
+  async function onSignIn({ email, password }) {
     setServerError("");
     try {
-      sessionStorage.setItem("login_profile", JSON.stringify({ country, name }));
       await signInWithPassword({ email, password });
       navigate("/app/country", { replace: true });
+    } catch (err) {
+      setServerError(err.message);
+    }
+  }
+
+  async function onSignUp({ email, password, name, country }) {
+    setServerError("");
+    try {
+      const data = await signUp({ email, password, name });
+      if (data.session) {
+        navigate("/app/country", { replace: true });
+      } else {
+        setMode("verify");
+      }
     } catch (err) {
       setServerError(err.message);
     }
@@ -73,6 +99,30 @@ export default function Login() {
     }
   }
 
+  if (mode === "verify") {
+    return (
+      <PageWrapper>
+        <CenterPane>
+          <Card>
+            <BrandWrapper>
+              <BrandName>EDUCATÉ</BrandName>
+            </BrandWrapper>
+            <VerifyWrapper>
+              <VerifyTitle>Check your email</VerifyTitle>
+              <VerifyText>
+                We sent you a confirmation link. Click it to activate your account, then come back to sign in.
+              </VerifyText>
+              <ToggleRow>
+                Already confirmed?{" "}
+                <ToggleBtn type="button" onClick={() => switchMode("signin")}>Sign in</ToggleBtn>
+              </ToggleRow>
+            </VerifyWrapper>
+          </Card>
+        </CenterPane>
+      </PageWrapper>
+    );
+  }
+
   return (
     <PageWrapper>
       <BackBtn onClick={() => navigate(-1)}>← Back</BackBtn>
@@ -84,52 +134,80 @@ export default function Login() {
             <Tagline>Preserving Ikwerre heritage, one story at a time.</Tagline>
           </BrandWrapper>
 
-          <StyledForm onSubmit={handleSubmit(onEmailSubmit)}>
-            <FieldWrapper>
-              <StyledSelect {...register("country", { required: "Please select a country" })} defaultValue="">
-                <option value="" disabled>Country</option>
-                {COUNTRIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </StyledSelect>
-              {errors.country && <ErrorText>{errors.country.message}</ErrorText>}
-            </FieldWrapper>
+          {mode === "signup" ? (
+            <StyledForm onSubmit={handleSubmit(onSignUp)}>
+              <FieldWrapper>
+                <StyledSelect {...register("country", { required: "Please select a country" })} defaultValue="">
+                  <option value="" disabled>Country</option>
+                  {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </StyledSelect>
+                {errors.country && <ErrorText>{errors.country.message}</ErrorText>}
+              </FieldWrapper>
 
-            <FieldWrapper>
-              <StyledInput
-                {...register("name", { required: "Please enter your name" })}
-                type="text"
-                placeholder="Name"
-              />
-              {errors.name && <ErrorText>{errors.name.message}</ErrorText>}
-            </FieldWrapper>
+              <FieldWrapper>
+                <StyledInput
+                  {...register("name", { required: "Name is required" })}
+                  type="text"
+                  placeholder="Full name"
+                />
+                {errors.name && <ErrorText>{errors.name.message}</ErrorText>}
+              </FieldWrapper>
 
-            <FieldWrapper>
-              <StyledInput
-                {...register("email", { required: "Email is required" })}
-                type="email"
-                placeholder="Email"
-                autoComplete="email"
-              />
-              {errors.email && <ErrorText>{errors.email.message}</ErrorText>}
-            </FieldWrapper>
+              <FieldWrapper>
+                <StyledInput
+                  {...register("email", { required: "Email is required" })}
+                  type="email"
+                  placeholder="Email"
+                  autoComplete="email"
+                />
+                {errors.email && <ErrorText>{errors.email.message}</ErrorText>}
+              </FieldWrapper>
 
-            <FieldWrapper>
-              <StyledInput
-                {...register("password", { required: "Password is required" })}
-                type="password"
-                placeholder="Password"
-                autoComplete="current-password"
-              />
-              {errors.password && <ErrorText>{errors.password.message}</ErrorText>}
-            </FieldWrapper>
+              <FieldWrapper>
+                <StyledInput
+                  {...register("password", { required: "Password is required", minLength: { value: 8, message: "At least 8 characters" } })}
+                  type="password"
+                  placeholder="Password"
+                  autoComplete="new-password"
+                />
+                {errors.password && <ErrorText>{errors.password.message}</ErrorText>}
+              </FieldWrapper>
 
-            {serverError && <ServerError>{serverError}</ServerError>}
+              {serverError && <ServerError>{serverError}</ServerError>}
 
-            <SignInBtn type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Signing in…" : "Sign in"}
-            </SignInBtn>
-          </StyledForm>
+              <SubmitBtn type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Creating account…" : "Create account"}
+              </SubmitBtn>
+            </StyledForm>
+          ) : (
+            <StyledForm onSubmit={handleSubmit(onSignIn)}>
+              <FieldWrapper>
+                <StyledInput
+                  {...register("email", { required: "Email is required" })}
+                  type="email"
+                  placeholder="Email"
+                  autoComplete="email"
+                />
+                {errors.email && <ErrorText>{errors.email.message}</ErrorText>}
+              </FieldWrapper>
+
+              <FieldWrapper>
+                <StyledInput
+                  {...register("password", { required: "Password is required" })}
+                  type="password"
+                  placeholder="Password"
+                  autoComplete="current-password"
+                />
+                {errors.password && <ErrorText>{errors.password.message}</ErrorText>}
+              </FieldWrapper>
+
+              {serverError && <ServerError>{serverError}</ServerError>}
+
+              <SubmitBtn type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Signing in…" : "Sign in"}
+              </SubmitBtn>
+            </StyledForm>
+          )}
 
           <Divider>
             <DividerLine />
@@ -139,8 +217,16 @@ export default function Login() {
 
           <GoogleBtn type="button" onClick={handleGoogle}>
             <GoogleIcon />
-            Sign in with Google
+            Continue with Google
           </GoogleBtn>
+
+          <ToggleRow>
+            {mode === "signin" ? (
+              <>Don't have an account?{" "}<ToggleBtn type="button" onClick={() => switchMode("signup")}>Sign up</ToggleBtn></>
+            ) : (
+              <>Already have an account?{" "}<ToggleBtn type="button" onClick={() => switchMode("signin")}>Sign in</ToggleBtn></>
+            )}
+          </ToggleRow>
         </Card>
       </CenterPane>
     </PageWrapper>

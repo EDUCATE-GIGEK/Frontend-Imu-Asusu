@@ -1,7 +1,9 @@
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
-import { GoChevronRight, GoChevronLeft } from "react-icons/go";
+import { GoChevronRight, GoChevronLeft, GoSignOut } from "react-icons/go";
 import tw from "tailwind-styled-components";
+import { useAuth } from "@/contexts/AuthContext";
+import { signOut } from "@/services/auth/signOut";
 
 const StyledDashboard = tw.div`
   h-screen bg-orange-background-100 overflow-hidden transition-all duration-300
@@ -45,9 +47,22 @@ const Spacer = tw.div`flex-1`;
 
 const EXPLORE_PATHS = ["/app/country", "/app/state", "/app/local-government", "/app/ethnic-group", "/app/tribe"];
 
+const LogoutBtn = tw.button`
+  w-full text-left rounded-lg px-3 py-2.5 text-sm font-bold text-title
+  flex items-center gap-2
+  hover:bg-black/10 transition-all duration-150
+  bg-transparent border-none cursor-pointer
+`;
+
 function Dashboard({ collapsed, onToggle }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const { user } = useAuth();
+
+  async function handleSignOut() {
+    await signOut();
+    navigate("/login");
+  }
 
   const isExplorePath = EXPLORE_PATHS.some((p) => pathname.startsWith(p));
   const [placesOpen, setPlacesOpen] = useState(false);
@@ -120,11 +135,29 @@ function Dashboard({ collapsed, onToggle }) {
           Manuscripts
         </NavLink>
 
+        <NavLink
+          to="/app/my-timeline"
+          className={({ isActive }) =>
+            isActive
+              ? "block rounded-lg px-3 py-2.5 text-sm font-medium no-underline bg-orange-300/50 text-title"
+              : "block rounded-lg px-3 py-2.5 text-sm font-medium no-underline text-title opacity-70 hover:opacity-100 hover:bg-black/5 transition-all duration-150"
+          }
+        >
+          Timeline
+        </NavLink>
+
         <NavBtnDisabled>Learning</NavBtnDisabled>
         <NavBtnDisabled>Settings</NavBtnDisabled>
       </NavSection>
 
       <Spacer />
+
+      {user && (
+        <LogoutBtn type="button" onClick={handleSignOut}>
+          <GoSignOut size={15} />
+          Log out
+        </LogoutBtn>
+      )}
     </StyledDashboard>
   );
 }
