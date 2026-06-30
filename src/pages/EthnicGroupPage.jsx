@@ -6,18 +6,14 @@ import Spacer from "@/ui/Spacer";
 import HistoryCard from "@/features/EthnicGroupPage/HistoryCard";
 import tw from "tailwind-styled-components";
 
-const StyledHeader = tw.h1`text-4xl font-bold mb-4 text-title`;
-const StyledDescription = tw.p`
-  bg-orange-background-100
-  rounded-md
-  px-6
-  py-4
-  h-1/5
-  mb-6
-  italic
-`;
-const InfoList = tw.ul`list-disc pl-6 mb-6`;
-const EndangeredBadge = tw.span`text-sm font-semibold text-red-600`;
+const HeroBlock = tw.div`hero-block`;
+const StyledHeader = tw.h1`font-heading text-5xl font-bold text-title mb-1`;
+const EndangeredBadge = tw.span`text-sm font-semibold text-red-600 mb-4 block`;
+const StyledDescription = tw.p`text-base text-title leading-relaxed max-w-2xl`;
+const StatsRow = tw.div`flex items-center justify-center gap-0 mb-10 divide-x divide-grey-info-outline bg-orange-background-100 rounded-2xl px-8 py-6`;
+const StatItem = tw.div`flex flex-col px-6 first:pl-0`;
+const StatNumber = tw.span`font-heading text-4xl font-bold text-title`;
+const StatLabel = tw.span`text-xs text-title opacity-50 mt-0.5 uppercase tracking-wide`;
 
 function EthnicGroupPage() {
   const { state } = useLocation();
@@ -41,17 +37,28 @@ function EthnicGroupPage() {
 
   return (
     <>
-      <StyledHeader>
-        {eg.name}
-        {info?.isEndangered && <EndangeredBadge> · Endangered</EndangeredBadge>}
-      </StyledHeader>
-      <StyledDescription>{info?.ethnicGroupDescription}</StyledDescription>
+      <HeroBlock>
+        <StyledHeader>{eg.name}</StyledHeader>
+        {info?.isEndangered && <EndangeredBadge>Endangered</EndangeredBadge>}
+        <StyledDescription>{info?.ethnicGroupDescription}</StyledDescription>
+      </HeroBlock>
 
-      <InfoList>
-        <li>{`${info?.spokenLanguagesCount} Spoken Languages`}</li>
-        <li>{`${info?.writtenLanguagesCount} Written Languages`}</li>
-        {info?.tribesCount > 0 && <li>{`${info.tribesCount} Tribes`}</li>}
-      </InfoList>
+      <StatsRow>
+        <StatItem>
+          <StatNumber>{info?.spokenLanguagesCount}</StatNumber>
+          <StatLabel>Spoken Languages</StatLabel>
+        </StatItem>
+        <StatItem>
+          <StatNumber>{info?.writtenLanguagesCount}</StatNumber>
+          <StatLabel>Written Languages</StatLabel>
+        </StatItem>
+        {info?.tribesCount > 0 && (
+          <StatItem>
+            <StatNumber>{info.tribesCount}</StatNumber>
+            <StatLabel>Tribes</StatLabel>
+          </StatItem>
+        )}
+      </StatsRow>
 
       <GroupedList label="Languages">
         <Spacer>
@@ -65,11 +72,7 @@ function EthnicGroupPage() {
         <GroupedList label="Tribes">
           <Spacer>
             {tribes.map((tribe) => (
-              <InfoOption
-                key={tribe.id}
-                label={tribe.name}
-                onClick={() => goToTribe(tribe)}
-              />
+              <InfoOption key={tribe.id} label={tribe.name} onClick={() => goToTribe(tribe)} />
             ))}
           </Spacer>
         </GroupedList>

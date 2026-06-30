@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -12,6 +12,7 @@ import { getAllLocalGovernments } from "@/services/apiLocalGovernments";
 import { getAllEthnicGroups } from "@/services/apiEthnicGroups";
 import { getAllTribes } from "@/services/apiTribes";
 import { getManuscriptsByUser, createManuscript, updateManuscript, deleteManuscript } from "@/services/apiManuscripts";
+import { uploadManuscriptFile } from "@/services/storage/uploadManuscriptFile";
 
 // ── Styled components ────────────────────────────────────────────────────────
 const PageWrapper = tw.div``;
@@ -22,6 +23,10 @@ const SectionLabel = tw.p`text-sm font-semibold text-title mb-2`;
 const Label = tw.label`text-sm font-semibold text-title`;
 const Input = tw.input`border border-grey-info-outline rounded-lg px-3 py-2 text-sm text-title focus:outline-none focus:border-orange-400`;
 const StyledTextarea = tw.textarea`border border-grey-info-outline rounded-lg px-3 py-2 text-sm text-title focus:outline-none focus:border-orange-400 resize-none h-28`;
+const FileZone = tw.div`border border-dashed border-grey-info-outline rounded-lg px-4 py-5 flex flex-col items-center gap-2 cursor-pointer hover:border-orange-400 transition-colors`;
+const FileZoneText = tw.p`text-sm text-title opacity-50`;
+const FileChip = tw.div`flex items-center gap-2 bg-orange-background-100 border border-orange-accent rounded-md px-3 py-1.5 text-sm text-title`;
+const RemoveFileBtn = tw.button`text-title opacity-40 hover:opacity-100 bg-transparent border-0 cursor-pointer leading-none`;
 const ErrorText = tw.p`text-red-500 text-xs mt-0.5`;
 const Divider = tw.hr`border-grey-info-outline`;
 const ButtonRow = tw.div`flex gap-3 mt-1`;
@@ -41,6 +46,9 @@ export default function Manuscripts() {
   const [isCreating, setIsCreating] = useState(false);
   const [editingManuscript, setEditingManuscript] = useState(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [pendingFile, setPendingFile] = useState(null);
+  const [uploadError, setUploadError] = useState(null);
+  const fileInputRef = useRef(null);
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm({
     defaultValues: { states: [], localGovernments: [], ethnicGroups: [], tribes: [] },
@@ -66,8 +74,15 @@ export default function Manuscripts() {
 
   // ── Mutations ────────────────────────────────────────────────────────────
   const createMutation = useMutation({
-    mutationFn: (formData) =>
-      createManuscript({
+    mutationFn: async (formData) => {
+      let filePath = null;
+      let fileName = null;
+      if (pendingFile) {
+        const uploaded = await uploadManuscriptFile(profile.id, pendingFile);
+        filePath = uploaded.path;
+        fileName = uploaded.name;
+      }
+      return createManuscript({
         userId: profile?.id,
         title: formData.title,
         manuscriptDescription: formData.description,
@@ -77,17 +92,29 @@ export default function Manuscripts() {
           ethnicGroups: formData.ethnicGroups ?? [],
           tribes: formData.tribes ?? [],
         },
-      }),
+        filePath,
+        fileName,
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["manuscripts"] });
       reset();
+      setPendingFile(null);
       setIsCreating(false);
     },
+    onError: (err) => setUploadError(err.message),
   });
 
   const updateMutation = useMutation({
-    mutationFn: (formData) =>
-      updateManuscript(editingManuscript.id, {
+    mutationFn: async (formData) => {
+      let filePath = undefined;
+      let fileName = undefined;
+      if (pendingFile) {
+        const uploaded = await uploadManuscriptFile(profile.id, pendingFile);
+        filePath = uploaded.path;
+        fileName = uploaded.name;
+      }
+      return updateManuscript(editingManuscript.id, {
         title: formData.title,
         manuscriptDescription: formData.description,
         contexts: {
@@ -96,12 +123,17 @@ export default function Manuscripts() {
           ethnicGroups: formData.ethnicGroups ?? [],
           tribes: formData.tribes ?? [],
         },
-      }),
+        filePath,
+        fileName,
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["manuscripts"] });
       reset();
+      setPendingFile(null);
       setEditingManuscript(null);
     },
+    onError: (err) => setUploadError(err.message),
   });
 
   const deleteMutation = useMutation({
@@ -124,11 +156,24 @@ export default function Manuscripts() {
 
   function handleCancel() {
     reset();
+    setPendingFile(null);
+    setUploadError(null);
     setIsCreating(false);
     setEditingManuscript(null);
   }
 
+  function handleFileChange(e) {
+    const file = e.target.files?.[0];
+    if (file) { setPendingFile(file); setUploadError(null); }
+  }
+
+  function removeFile() {
+    setPendingFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
   function onSubmit(data) {
+    setUploadError(null);
     if (editingManuscript) {
       updateMutation.mutate(data);
     } else {
@@ -182,6 +227,33 @@ export default function Manuscripts() {
           <Divider />
 
           <FieldWrapper>
+            <Label>Context file <span className="font-normal opacity-40">(PDF, DOCX, or TXT · max 20 MB)</span></Label>
+            <input
+              ref={fileInputRef}
+              id="file"
+              type="file"
+              accept=".pdf,.doc,.docx,.txt"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            {pendingFile ? (
+              <FileChip>
+                <span className="truncate max-w-xs">{pendingFile.name}</span>
+                <RemoveFileBtn type="button" onClick={removeFile} aria-label="Remove file">×</RemoveFileBtn>
+              </FileChip>
+            ) : (
+              <FileZone onClick={() => fileInputRef.current?.click()}>
+                <FileZoneText>Click to choose a file</FileZoneText>
+                {editingManuscript?.file_name && (
+                  <FileZoneText>Current: {editingManuscript.file_name}</FileZoneText>
+                )}
+              </FileZone>
+            )}
+          </FieldWrapper>
+
+          <Divider />
+
+          <FieldWrapper>
             <Label htmlFor="description">Description</Label>
             <StyledTextarea
               id="description"
@@ -189,6 +261,8 @@ export default function Manuscripts() {
               {...register("description")}
             />
           </FieldWrapper>
+
+          {uploadError && <ErrorText>{uploadError}</ErrorText>}
 
           {(createMutation.isError || updateMutation.isError) && (
             <ErrorText>{createMutation.error?.message ?? updateMutation.error?.message}</ErrorText>

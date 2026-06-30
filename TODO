@@ -1,9 +1,0 @@
-1. Modify the Pages UI and Content and maybe add Home Page
-2. Apply login feature
-   2a. Look over the app layout and login pages -- see if email accounts can be created
-   2b. Fix Login fields on the login page
-   2c. start timeline
-   2d. Go over services -- especially for manuscripts
-3. Learn how to use react-hook-form to indicate when a manuscript is created, edited, or deleted
-4. Modify vsison statement and Github repo
-5. Start working on timelines next week wednesday

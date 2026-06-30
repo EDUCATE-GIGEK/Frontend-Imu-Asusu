@@ -5,17 +5,13 @@ import InfoOption from "@/ui/InfoOption";
 import Spacer from "@/ui/Spacer";
 import tw from "tailwind-styled-components";
 
-const StyledHeader = tw.h1`text-4xl font-bold mb-4 text-title`;
-const StyledDescription = tw.p`
-  bg-orange-background-100
-  rounded-md
-  px-6
-  py-4
-  h-1/5
-  mb-6
-  italic
-`;
-const InfoList = tw.ul`list-disc pl-6 mb-6`;
+const HeroBlock = tw.div`hero-block`;
+const StyledHeader = tw.h1`font-heading text-5xl font-bold text-title mb-4`;
+const StyledDescription = tw.p`text-base text-title leading-relaxed max-w-2xl`;
+const StatsRow = tw.div`flex items-center justify-center gap-0 mb-10 divide-x divide-grey-info-outline bg-orange-background-100 rounded-2xl px-8 py-6`;
+const StatItem = tw.div`flex flex-col px-6 first:pl-0`;
+const StatNumber = tw.span`font-heading text-4xl font-bold text-title`;
+const StatLabel = tw.span`text-xs text-title opacity-50 mt-0.5 uppercase tracking-wide`;
 
 function LocalGovernmentPage() {
   const { state } = useLocation();
@@ -38,15 +34,29 @@ function LocalGovernmentPage() {
 
   return (
     <>
-      <StyledHeader>{lg.name}</StyledHeader>
-      <StyledDescription>{info?.localGovernmentDescription}</StyledDescription>
+      <HeroBlock>
+        <StyledHeader>{lg.name}</StyledHeader>
+        <StyledDescription>{info?.localGovernmentDescription}</StyledDescription>
+      </HeroBlock>
 
-      <InfoList>
-        <li>{`${info?.ethnicGroupsCount} Ethnic Groups`}</li>
-        <li>{`${info?.tribesCount} Tribes`}</li>
-        <li>{`${info?.endangeredGroupsCount} Endangered Groups`}</li>
-        <li>{`${info?.endangeredLanguagesCount} Endangered Languages`}</li>
-      </InfoList>
+      <StatsRow>
+        <StatItem>
+          <StatNumber>{info?.ethnicGroupsCount}</StatNumber>
+          <StatLabel>Ethnic Groups</StatLabel>
+        </StatItem>
+        <StatItem>
+          <StatNumber>{info?.tribesCount}</StatNumber>
+          <StatLabel>Tribes</StatLabel>
+        </StatItem>
+        <StatItem>
+          <StatNumber>{info?.endangeredGroupsCount}</StatNumber>
+          <StatLabel>Endangered Groups</StatLabel>
+        </StatItem>
+        <StatItem>
+          <StatNumber>{info?.endangeredLanguagesCount}</StatNumber>
+          <StatLabel>Endangered Languages</StatLabel>
+        </StatItem>
+      </StatsRow>
 
       <GroupedList label="Ethnic Groups">
         <Spacer>
