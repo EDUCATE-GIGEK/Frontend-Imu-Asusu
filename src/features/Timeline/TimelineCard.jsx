@@ -1,11 +1,12 @@
 import tw from "tailwind-styled-components";
 
 const Card = tw.div`
-  bg-white border border-grey-info-outline rounded-xl p-5
-  cursor-pointer hover:border-orange-300 hover:shadow-sm
-  transition-all duration-200 flex flex-col gap-3
+  bg-white rounded-md p-5
+  shadow-sm cursor-pointer flex flex-col gap-3
+  hover:shadow-lg hover:scale-[1.02]
+  transition-all duration-200 ease-out outline-none
 `;
-const AspectBadge = tw.span`text-xs font-semibold bg-orange-background-100 text-title rounded-full px-3 py-1 self-start`;
+const AspectBadge = tw.span`text-xs font-semibold bg-orange-background-100 text-title rounded px-3 py-1 self-start`;
 const CardTitle = tw.h3`font-heading text-xl font-semibold text-title leading-snug`;
 const CardMeta = tw.p`text-xs text-title opacity-50`;
 const CardDescription = tw.p`text-sm text-title opacity-70 leading-relaxed line-clamp-2`;

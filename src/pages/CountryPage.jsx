@@ -3,16 +3,13 @@ import useCountryPage from "@/hooks/useCountryPage";
 import tw from "tailwind-styled-components";
 
 const PageWrapper = tw.div`p-8`;
-const StyledHeader = tw.h1`text-4xl font-bold mb-4 text-title`;
-const StyledDescription = tw.p`
-  bg-orange-background-100
-  rounded-md
-  px-6
-  py-4
-  mb-6
-  italic
-`;
-const InfoList = tw.ul`list-disc pl-6 mb-8`;
+const HeroBlock = tw.div`hero-block`;
+const StyledHeader = tw.h1`font-heading text-5xl font-bold text-title mb-4`;
+const StyledDescription = tw.p`text-base text-title leading-relaxed max-w-2xl`;
+const StatsRow = tw.div`flex items-center justify-center gap-0 mb-10 divide-x divide-grey-info-outline bg-orange-background-100 rounded-2xl px-8 py-6`;
+const StatItem = tw.div`flex flex-col px-6 first:pl-0`;
+const StatNumber = tw.span`font-heading text-4xl font-bold text-title`;
+const StatLabel = tw.span`text-xs text-title opacity-50 mt-0.5 uppercase tracking-wide`;
 const SectionLabel = tw.p`text-xs font-semibold text-title opacity-40 uppercase tracking-widest mb-4`;
 
 const Grid = tw.div`grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3 max-w-3xl`;
@@ -48,15 +45,29 @@ function CountryPage() {
 
   return (
     <PageWrapper>
-      <StyledHeader>{name}</StyledHeader>
-      <StyledDescription>{info?.countryDescription}</StyledDescription>
+      <HeroBlock>
+        <StyledHeader>{name}</StyledHeader>
+        <StyledDescription>{info?.countryDescription}</StyledDescription>
+      </HeroBlock>
 
-      <InfoList>
-        <li>{`${info?.statesCount} States`}</li>
-        <li>{`${info?.localGovernmentsCount} Local Governments`}</li>
-        <li>{`${info?.ethnicGroupsCount} Ethnic Groups`}</li>
-        <li>{`${info?.endangeredGroupsCount} Endangered Groups`}</li>
-      </InfoList>
+      <StatsRow>
+        <StatItem>
+          <StatNumber>{info?.statesCount}</StatNumber>
+          <StatLabel>States</StatLabel>
+        </StatItem>
+        <StatItem>
+          <StatNumber>{info?.localGovernmentsCount}</StatNumber>
+          <StatLabel>Local Governments</StatLabel>
+        </StatItem>
+        <StatItem>
+          <StatNumber>{info?.ethnicGroupsCount}</StatNumber>
+          <StatLabel>Ethnic Groups</StatLabel>
+        </StatItem>
+        <StatItem>
+          <StatNumber>{info?.endangeredGroupsCount}</StatNumber>
+          <StatLabel>Endangered Groups</StatLabel>
+        </StatItem>
+      </StatsRow>
 
       <SectionLabel>Select a state</SectionLabel>
       <Grid>

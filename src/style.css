@@ -5,6 +5,7 @@
 @theme {
   --color-grey-info-outline: #ced4da;
   --color-orange-background-100: #fff4e6;
+  --color-orange-accent: #fdba74;
   --color-title: #63614f;
 
   --font-heading: "Playfair Display", Georgia, serif;
@@ -14,9 +15,62 @@
 @layer base {
   body {
     font-family: var(--font-body);
+    color: var(--color-title);
   }
 
   h1, h2, h3 {
     font-family: var(--font-heading);
+  }
+
+  p {
+    font-family: var(--font-heading);
+    font-style: italic;
+    line-height: 1.7;
+  }
+}
+
+@layer components {
+  .info-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.625rem 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--color-grey-info-outline);
+    background: white;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-title);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+    text-decoration: none;
+  }
+
+  .info-option:hover {
+    border-color: var(--color-orange-accent);
+    background-color: var(--color-orange-background-100);
+  }
+
+  .info-option--disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .hero-block {
+    border-radius: 1rem;
+    padding: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .hero-block p {
+    padding-left: 1rem;
+    border-left: 3px solid var(--color-orange-accent);
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    font-style: italic;
+    font-weight: 400;
+    line-height: 1.7;
+    color: var(--color-title);
   }
 }
