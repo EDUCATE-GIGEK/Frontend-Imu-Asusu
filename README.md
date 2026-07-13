@@ -5,13 +5,16 @@ React + Vite frontend for **Proj 1: Ịmụ-Asụsụ** (EDUCATE-GIGEK/Educate-O
 ## Stack
 
 - React 18 + Vite (JSX)
-- react-router-dom
+- Supabase — Postgres, Auth, Storage, and Edge Functions (backend)
+- Groq — LLM calls from Edge Functions (e.g. manuscript writing assist)
 - @tanstack/react-query (+ devtools)
-- axios for the custom backend (local PostgreSQL via your own API)
+- react-router-dom
 - react-hook-form
+- Tailwind CSS v4 + tailwind-styled-components / styled-components
+- TipTap (built on ProseMirror) — rich text editor for manuscripts; ProseMirror decorations/plugins power inline AI suggestions
+- DOMPurify — sanitizes stored HTML before render
 - react-hot-toast
 - react-icons
-- styled-components
 - date-fns
 
 ## Folder layout
