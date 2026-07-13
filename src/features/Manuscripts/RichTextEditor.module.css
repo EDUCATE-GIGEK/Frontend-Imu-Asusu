@@ -1,0 +1,53 @@
+.editor:focus-within {
+  border-color: var(--color-orange-accent);
+}
+
+.editor :global(.tiptap) {
+  outline: none;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--color-title);
+}
+
+.editor :global(.tiptap h1) { font-size: 1.5rem; font-weight: 700; margin: 0.5rem 0; }
+.editor :global(.tiptap h2) { font-size: 1.25rem; font-weight: 700; margin: 0.5rem 0; }
+.editor :global(.tiptap h3) { font-size: 1.1rem; font-weight: 600; margin: 0.5rem 0; }
+.editor :global(.tiptap ul) { list-style: disc; padding-left: 1.5rem; }
+.editor :global(.tiptap ol) { list-style: decimal; padding-left: 1.5rem; }
+
+.editor :global(.tiptap blockquote) {
+  border-left: 3px solid var(--color-orange-accent);
+  padding-left: 0.75rem;
+  opacity: 0.8;
+  font-style: italic;
+}
+
+.editor :global(.tiptap p.is-editor-empty:first-child::before) {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* Inline AI writing-assist suggestions (positions supplied via ProseMirror
+   decorations in suggestionHighlight.js). Class names are emitted verbatim by
+   the plugin, so they must not be hashed — hence :global. */
+.editor :global(.suggestion) {
+  cursor: pointer;
+  text-decoration-line: underline;
+  text-decoration-style: wavy;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  border-radius: 2px;
+  transition: background-color 0.15s;
+}
+.editor :global(.suggestion:hover) {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+.editor :global(.suggestion--tone) {
+  text-decoration-color: var(--color-orange-accent);
+}
+.editor :global(.suggestion--grammar) {
+  text-decoration-color: #ef4444;
+}

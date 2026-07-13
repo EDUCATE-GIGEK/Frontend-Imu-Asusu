@@ -6,6 +6,8 @@ import tw from "tailwind-styled-components";
 import { useAuth } from "@/contexts/AuthContext";
 import ContextMultiSelect from "@/features/Manuscripts/ContextMultiSelect";
 import ManuscriptCard from "@/features/Manuscripts/ManuscriptCard";
+import RichTextEditor from "@/features/Manuscripts/RichTextEditor";
+import WritingAssistPanel from "@/features/Manuscripts/WritingAssistPanel";
 import Spinner from "@/ui/Spinner";
 import { getAllStates } from "@/services/apiStates";
 import { getAllLocalGovernments } from "@/services/apiLocalGovernments";
@@ -13,6 +15,7 @@ import { getAllEthnicGroups } from "@/services/apiEthnicGroups";
 import { getAllTribes } from "@/services/apiTribes";
 import { getManuscriptsByUser, createManuscript, updateManuscript, deleteManuscript } from "@/services/apiManuscripts";
 import { uploadManuscriptFile } from "@/services/storage/uploadManuscriptFile";
+import { useWritingAssist } from "@/hooks/useWritingAssist";
 
 // ── Styled components ────────────────────────────────────────────────────────
 const PageWrapper = tw.div``;
@@ -22,7 +25,7 @@ const FieldWrapper = tw.div`flex flex-col gap-1`;
 const SectionLabel = tw.p`text-sm font-semibold text-title mb-2`;
 const Label = tw.label`text-sm font-semibold text-title`;
 const Input = tw.input`border border-grey-info-outline rounded-lg px-3 py-2 text-sm text-title focus:outline-none focus:border-orange-400`;
-const StyledTextarea = tw.textarea`border border-grey-info-outline rounded-lg px-3 py-2 text-sm text-title focus:outline-none focus:border-orange-400 resize-none h-28`;
+const Select = tw.select`border border-grey-info-outline rounded-lg px-3 py-2 text-sm text-title focus:outline-none focus:border-orange-400 bg-white`;
 const FileZone = tw.div`border border-dashed border-grey-info-outline rounded-lg px-4 py-5 flex flex-col items-center gap-2 cursor-pointer hover:border-orange-400 transition-colors`;
 const FileZoneText = tw.p`text-sm text-title opacity-50`;
 const FileChip = tw.div`flex items-center gap-2 bg-orange-background-100 border border-orange-accent rounded-md px-3 py-1.5 text-sm text-title`;
@@ -38,6 +41,14 @@ const LoginPromptText = tw.p`text-sm text-title`;
 const ManuscriptList = tw.div`flex flex-col gap-3 mt-6`;
 const EmptyState = tw.p`text-sm text-title opacity-40 mt-6`;
 
+const EDUCATION_LEVELS = [
+  { value: "preschool", label: "Preschool" },
+  { value: "kindergarten", label: "Kindergarten" },
+  { value: "high_school", label: "High School" },
+  { value: "undergrad", label: "Undergrad" },
+  { value: "grad", label: "Grad" },
+];
+
 export default function Manuscripts() {
   const { session, profile, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -51,13 +62,20 @@ export default function Manuscripts() {
   const fileInputRef = useRef(null);
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm({
-    defaultValues: { states: [], localGovernments: [], ethnicGroups: [], tribes: [] },
+    defaultValues: { states: [], localGovernments: [], ethnicGroups: [], tribes: [], description: "", educationLevel: "" },
   });
 
   const selectedStates = watch("states") ?? [];
   const selectedLGs = watch("localGovernments") ?? [];
   const selectedEGs = watch("ethnicGroups") ?? [];
   const selectedTribes = watch("tribes") ?? [];
+  const description = watch("description") ?? "";
+  const educationLevel = watch("educationLevel");
+  const audience = educationLevel || null;
+  const hasContent = description.replace(/<[^>]*>/g, "").trim().length > 0;
+
+  // ── AI writing assist ──────────────────────────────────────────────────────
+  const assist = useWritingAssist({ manuscriptId: editingManuscript?.id });
 
   // ── Context option lists ─────────────────────────────────────────────────
   const { data: states = [] } = useQuery({ queryKey: ["states"], queryFn: getAllStates });
@@ -92,6 +110,7 @@ export default function Manuscripts() {
           ethnicGroups: formData.ethnicGroups ?? [],
           tribes: formData.tribes ?? [],
         },
+        educationLevel: formData.educationLevel,
         filePath,
         fileName,
       });
@@ -101,6 +120,7 @@ export default function Manuscripts() {
       reset();
       setPendingFile(null);
       setIsCreating(false);
+      assist.reset();
     },
     onError: (err) => setUploadError(err.message),
   });
@@ -123,6 +143,7 @@ export default function Manuscripts() {
           ethnicGroups: formData.ethnicGroups ?? [],
           tribes: formData.tribes ?? [],
         },
+        educationLevel: formData.educationLevel,
         filePath,
         fileName,
       });
@@ -132,6 +153,7 @@ export default function Manuscripts() {
       reset();
       setPendingFile(null);
       setEditingManuscript(null);
+      assist.reset();
     },
     onError: (err) => setUploadError(err.message),
   });
@@ -146,6 +168,7 @@ export default function Manuscripts() {
     setIsCreating(false);
     setValue("title", manuscript.title ?? "");
     setValue("description", manuscript.manuscript_description ?? "");
+    setValue("educationLevel", manuscript.education_level ?? "");
     const ctx = manuscript.contexts ?? {};
     setValue("states", ctx.states ?? []);
     setValue("localGovernments", ctx.localGovernments ?? []);
@@ -160,6 +183,7 @@ export default function Manuscripts() {
     setUploadError(null);
     setIsCreating(false);
     setEditingManuscript(null);
+    assist.reset();
   }
 
   function handleFileChange(e) {
@@ -212,6 +236,16 @@ export default function Manuscripts() {
             {errors.title && <ErrorText>{errors.title.message}</ErrorText>}
           </FieldWrapper>
 
+          <FieldWrapper>
+            <Label htmlFor="educationLevel">Student level <span className="font-normal opacity-40">(optional)</span></Label>
+            <Select id="educationLevel" {...register("educationLevel")}>
+              <option value="">Not specified</option>
+              {EDUCATION_LEVELS.map((level) => (
+                <option key={level.value} value={level.value}>{level.label}</option>
+              ))}
+            </Select>
+          </FieldWrapper>
+
           <Divider />
 
           <FieldWrapper>
@@ -254,13 +288,25 @@ export default function Manuscripts() {
           <Divider />
 
           <FieldWrapper>
-            <Label htmlFor="description">Description</Label>
-            <StyledTextarea
-              id="description"
-              placeholder="Write your manuscript notes here…"
-              {...register("description")}
+            <Label>Description</Label>
+            <RichTextEditor
+              key={editingManuscript?.id ?? "new"}
+              content={description}
+              onChange={(html) => setValue("description", html)}
+              suggestions={assist.editorSuggestions}
+              onSuggestionsLocated={assist.setLocated}
+              onResolve={assist.resolve}
             />
           </FieldWrapper>
+
+          <WritingAssistPanel
+            hasContent={hasContent}
+            isPending={assist.isPending}
+            error={assist.error}
+            items={assist.items}
+            hasRun={assist.hasRun}
+            onRun={() => assist.run(description, audience)}
+          />
 
           {uploadError && <ErrorText>{uploadError}</ErrorText>}
 

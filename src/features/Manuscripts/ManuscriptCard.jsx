@@ -1,11 +1,13 @@
 import { useState } from "react";
 import tw from "tailwind-styled-components";
+import DOMPurify from "dompurify";
 import { getManuscriptFileUrl } from "@/services/storage/getManuscriptFileUrl";
+import styles from "./ManuscriptCard.module.css";
 
 const Card = tw.div`bg-white border border-grey-info-outline rounded-xl p-5 flex flex-col gap-3`;
 const CardTitle = tw.h3`font-heading text-lg font-semibold text-title`;
 const CardDate = tw.p`text-xs text-title opacity-40 mt-0.5`;
-const CardDescription = tw.p`text-sm text-title opacity-70 leading-relaxed line-clamp-3`;
+const CardDescription = tw.div`text-sm text-title opacity-70 leading-relaxed line-clamp-3`;
 const TagRow = tw.div`flex flex-wrap gap-1.5`;
 const Tag = tw.span`text-xs bg-orange-background-100 text-title rounded-full px-2.5 py-0.5`;
 const FileRow = tw.div`flex items-center gap-2`;
@@ -63,7 +65,10 @@ export default function ManuscriptCard({ manuscript, onEdit, onDelete, isDeletin
       )}
 
       {manuscript.manuscript_description && (
-        <CardDescription>{manuscript.manuscript_description}</CardDescription>
+        <CardDescription
+          className={styles.description}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(manuscript.manuscript_description) }}
+        />
       )}
 
       {manuscript.file_path && (
