@@ -2,7 +2,7 @@ import { Extension } from "@tiptap/core";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 
-export const suggestionPluginKey = new PluginKey("suggestionHighlight");
+export const suggestionPluginKey = new PluginKey("manuscriptSuggestionHighlight");
 
 // Find the first [from, to] range whose text equals `query`, searched within
 // each text block so the returned document positions stay accurate. Excerpts
@@ -52,8 +52,8 @@ function build(doc, items) {
  * dismiss them. The `onLocated` option fires (asynchronously) after every
  * (re)build with the located list so React state can track match status.
  */
-export const SuggestionHighlight = Extension.create({
-  name: "suggestionHighlight",
+export const ManuscriptSuggestionHighlight = Extension.create({
+  name: "manuscriptSuggestionHighlight",
 
   addOptions() {
     return { onLocated: () => {} };
