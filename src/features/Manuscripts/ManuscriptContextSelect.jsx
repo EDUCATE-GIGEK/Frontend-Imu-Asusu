@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 
-function ContextMultiSelect({ label, items, itemLabel, selected, onChange }) {
+function ManuscriptContextSelect({ label, items, itemLabel, selected, onChange }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const ref = useRef(null);
@@ -115,4 +115,4 @@ function ContextMultiSelect({ label, items, itemLabel, selected, onChange }) {
   );
 }
 
-export default ContextMultiSelect;
+export default ManuscriptContextSelect;

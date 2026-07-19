@@ -1,13 +1,13 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Placeholder from "@tiptap/extension-placeholder";
 import CharacterCount from "@tiptap/extension-character-count";
 import tw from "tailwind-styled-components";
-import styles from "./RichTextEditor.module.css";
-import { SuggestionHighlight } from "./suggestionHighlight";
-import SuggestionPopover from "./SuggestionPopover";
+import styles from "./ManuscriptEditor.module.css";
+import { ManuscriptSuggestionHighlight } from "./manuscriptSuggestionHighlight";
+import ManuscriptSuggestionPopover from "./ManuscriptSuggestionPopover";
 
 const SYMBOLS = [
   "©", "®", "™", "°", "§", "¶", "±", "×", "÷", "≈", "≠", "≤", "≥",
@@ -26,14 +26,14 @@ const SymbolBtn = tw.button`w-7 h-7 rounded text-sm text-title cursor-pointer bo
 const EditorWrapper = tw.div`border border-t-0 border-grey-info-outline rounded-b-lg px-3 py-2 min-h-28`;
 const CharCount = tw.p`text-xs text-title opacity-40 mt-1 text-right`;
 
-export default function RichTextEditor({
+const ManuscriptEditor = forwardRef(function ManuscriptEditor({
   content,
   onChange,
   placeholder = "Write your manuscript here…",
   suggestions = [],
   onSuggestionsLocated,
   onResolve,
-}) {
+}, ref) {
   const [showSymbols, setShowSymbols] = useState(false);
   const [active, setActive] = useState(null); // { item, top, left } for the open popover
   const anchorRef = useRef(null);
@@ -49,7 +49,7 @@ export default function RichTextEditor({
       Underline,
       Placeholder.configure({ placeholder }),
       CharacterCount,
-      SuggestionHighlight.configure({ onLocated: (located) => locatedRef.current?.(located) }),
+      ManuscriptSuggestionHighlight.configure({ onLocated: (located) => locatedRef.current?.(located) }),
     ],
     content: content || "",
     onUpdate: ({ editor }) => onChange?.(editor.getHTML()),
@@ -62,6 +62,21 @@ export default function RichTextEditor({
     editor.commands.setSuggestions(suggestions);
     setActive(null);
   }, [editor, suggestions]);
+
+  // Imperative insert for AI-generated passages. The `content` prop only seeds
+  // the editor at mount, so generated text has to enter through an editor
+  // command — appended at the end of the document — which fires onUpdate and
+  // flows back out through onChange like any other edit.
+  useImperativeHandle(
+    ref,
+    () => ({
+      insertContent(html) {
+        if (!editor || !html) return;
+        editor.chain().focus("end").insertContent(html).run();
+      },
+    }),
+    [editor],
+  );
 
   if (!editor) return null;
 
@@ -149,7 +164,7 @@ export default function RichTextEditor({
           <EditorContent editor={editor} />
         </EditorWrapper>
         {active && (
-          <SuggestionPopover
+          <ManuscriptSuggestionPopover
             item={active.item}
             top={active.top}
             left={active.left}
@@ -162,4 +177,6 @@ export default function RichTextEditor({
       <CharCount>{editor.storage.characterCount.characters()} characters</CharCount>
     </div>
   );
-}
+});
+
+export default ManuscriptEditor;

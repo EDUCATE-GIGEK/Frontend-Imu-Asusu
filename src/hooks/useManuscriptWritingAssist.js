@@ -16,7 +16,7 @@ function flatten(data) {
  * records apply/dismiss outcomes. Apply/dismiss themselves are performed by the
  * editor (it holds the document); this hook only reflects the result.
  */
-export function useWritingAssist({ manuscriptId }) {
+export function useManuscriptWritingAssist({ manuscriptId }) {
   const [items, setItems] = useState([]);
 
   const mutation = useMutation({
@@ -49,16 +49,16 @@ export function useWritingAssist({ manuscriptId }) {
 
   // Stable-identity payload for the editor: keyed on id+excerpt so toggling a
   // suggestion's `matched` flag (via setLocated) doesn't retrigger a rebuild and
-  // cause a locate/setLocated feedback loop. Only id/category/excerpt/replacement
-  // are needed to draw and apply decorations.
+  // cause a locate/setLocated feedback loop.
   const editorKey = activeItems.map((it) => `${it.id}:${it.excerpt}`).join("|");
   const editorSuggestions = useMemo(
     () =>
-      activeItems.map(({ id, category, excerpt, replacement }) => ({
+      activeItems.map(({ id, category, excerpt, replacement, issue }) => ({
         id,
         category,
         excerpt,
         replacement,
+        issue,
       })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [editorKey],
