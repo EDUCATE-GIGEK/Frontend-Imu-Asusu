@@ -51,3 +51,21 @@
 .editor :global(.suggestion--grammar) {
   text-decoration-color: #ef4444;
 }
+
+/* Fact-check verdicts. A claim the records confirm is worth seeing but not
+   worth alarming anyone about, so it gets a dotted underline rather than the
+   wavy one the problems use. */
+.editor :global(.suggestion--fact-supported) {
+  text-decoration-style: dotted;
+  text-decoration-color: #16a34a;
+}
+.editor :global(.suggestion--fact-contradicted) {
+  text-decoration-color: #ef4444;
+  text-decoration-thickness: 2px;
+  background-color: rgba(239, 68, 68, 0.08);
+}
+.editor :global(.suggestion--fact-no-evidence) {
+  text-decoration-style: dotted;
+  text-decoration-color: var(--color-title);
+  opacity: 0.75;
+}

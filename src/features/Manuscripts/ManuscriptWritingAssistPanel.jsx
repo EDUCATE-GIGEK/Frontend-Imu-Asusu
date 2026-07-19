@@ -41,7 +41,7 @@ function Suggestion({ item }) {
   );
 }
 
-export default function WritingAssistPanel({ hasContent, isPending, error, items, hasRun, onRun }) {
+export default function ManuscriptWritingAssistPanel({ hasContent, isPending, error, items, hasRun, onRun }) {
   const tone = items.filter((i) => i.category === "tone");
   const grammar = items.filter((i) => i.category === "grammar");
   const nothingFound = hasRun && items.length === 0;
