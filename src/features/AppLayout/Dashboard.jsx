@@ -45,7 +45,12 @@ const DropdownItem = tw.button`
 
 const Spacer = tw.div`flex-1`;
 
-const EXPLORE_PATHS = ["/app/country", "/app/state", "/app/local-government", "/app/ethnic-group", "/app/tribe"];
+const EXPLORE_PATHS = ["/app/place", "/app/people", "/app/country", "/app/state", "/app/local-government", "/app/ethnic-group", "/app/tribe"];
+
+// Temporary default entry point into the places tree (Nigeria) until the
+// onboarding / home hub lets a user pick their region. Reseeding the DB changes
+// this id.
+const DEFAULT_EXPLORE_PLACE_ID = "a735a0fb-a76c-436f-b38e-d8feb9373aa9";
 
 const LogoutBtn = tw.button`
   w-full text-left rounded-lg px-3 py-2.5 text-sm font-bold text-title
@@ -108,11 +113,7 @@ function Dashboard({ collapsed, onToggle }) {
           <DropdownContent>
             <DropdownItem
               type="button"
-              onClick={() =>
-                navigate("/app/country", {
-                  state: { country: "Nigeria", continent: "africa" },
-                })
-              }
+              onClick={() => navigate(`/app/place/${DEFAULT_EXPLORE_PLACE_ID}`)}
               className={isExplorePath ? "opacity-100! bg-orange-300/50! text-title!" : ""}
             >
               Nigeria →
