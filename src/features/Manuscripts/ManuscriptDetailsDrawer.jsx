@@ -34,18 +34,12 @@ export default function ManuscriptDetailsDrawer({
   onFileChange,
   onRemoveFile,
   currentFileName,
-  states,
-  localGovernments,
-  ethnicGroups,
-  tribes,
-  selectedStates,
-  selectedLGs,
-  selectedEGs,
-  selectedTribes,
-  onStatesChange,
-  onLGsChange,
-  onEGsChange,
-  onTribesChange,
+  places,
+  peoples,
+  selectedPlaces,
+  selectedPeoples,
+  onPlacesChange,
+  onPeoplesChange,
   educationLevels,
   educationLevel,
   onEducationLevelChange,
@@ -85,13 +79,12 @@ export default function ManuscriptDetailsDrawer({
           <FieldWrapper>
             <SectionLabel>Contexts</SectionLabel>
             <Hint>
-              AI fact-checks and generation are grounded in the history records for what you pick here.
+              AI fact-checks and generation are grounded in the entries for the places and peoples
+              you pick here.
             </Hint>
             <div className="mt-1 flex flex-col gap-3">
-              <ManuscriptContextSelect label="States" items={states} itemLabel="state_name" selected={selectedStates} onChange={onStatesChange} />
-              <ManuscriptContextSelect label="Local Governments" items={localGovernments} itemLabel="name" selected={selectedLGs} onChange={onLGsChange} />
-              <ManuscriptContextSelect label="Ethnic Groups" items={ethnicGroups} itemLabel="name" selected={selectedEGs} onChange={onEGsChange} />
-              <ManuscriptContextSelect label="Tribes" items={tribes} itemLabel="name" selected={selectedTribes} onChange={onTribesChange} />
+              <ManuscriptContextSelect label="Places" items={places} itemLabel="name" selected={selectedPlaces} onChange={onPlacesChange} />
+              <ManuscriptContextSelect label="Peoples" items={peoples} itemLabel="name" selected={selectedPeoples} onChange={onPeoplesChange} />
             </div>
           </FieldWrapper>
 
