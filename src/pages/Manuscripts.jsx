@@ -12,10 +12,8 @@ import ManuscriptWritingAssistPanel from "@/features/Manuscripts/ManuscriptWriti
 import ManuscriptFactCheckButton from "@/features/Manuscripts/ManuscriptFactCheckButton";
 import ManuscriptGenerateDrawer from "@/features/Manuscripts/ManuscriptGenerateDrawer";
 import Spinner from "@/ui/Spinner";
-import { getAllStates } from "@/services/apiStates";
-import { getAllLocalGovernments } from "@/services/apiLocalGovernments";
-import { getAllEthnicGroups } from "@/services/apiEthnicGroups";
-import { getAllTribes } from "@/services/apiTribes";
+import { getAllPlaces } from "@/services/apiPlaces";
+import { getAllPeoples } from "@/services/apiPeoples";
 import { getManuscriptsByUser, createManuscript, updateManuscript, deleteManuscript } from "@/services/apiManuscripts";
 import { uploadManuscriptFile } from "@/services/storage/uploadManuscriptFile";
 import { useManuscriptWritingAssist } from "@/hooks/useManuscriptWritingAssist";
@@ -65,14 +63,12 @@ export default function Manuscripts() {
   const fileInputRef = useRef(null);
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm({
-    defaultValues: { states: [], localGovernments: [], ethnicGroups: [], tribes: [], description: "", educationLevel: "" },
+    defaultValues: { places: [], peoples: [], description: "", educationLevel: "" },
   });
 
   const title = watch("title") ?? "";
-  const selectedStates = watch("states") ?? [];
-  const selectedLGs = watch("localGovernments") ?? [];
-  const selectedEGs = watch("ethnicGroups") ?? [];
-  const selectedTribes = watch("tribes") ?? [];
+  const selectedPlaces = watch("places") ?? [];
+  const selectedPeoples = watch("peoples") ?? [];
   const description = watch("description") ?? "";
   const educationLevel = watch("educationLevel");
   const audience = educationLevel || null;
@@ -86,16 +82,11 @@ export default function Manuscripts() {
   // Generated passages enter the document through the editor's imperative insert.
   const editorRef = useRef(null);
 
-  // The fact-checker grounds claims in the history records behind these, so with
-  // nothing selected there is nothing to check against.
+  // The fact-checker grounds claims in the entries behind the selected places
+  // and peoples, so with nothing selected there is nothing to check against.
   const selectedContexts = useMemo(
-    () => ({
-      states: selectedStates,
-      localGovernments: selectedLGs,
-      ethnicGroups: selectedEGs,
-      tribes: selectedTribes,
-    }),
-    [selectedStates, selectedLGs, selectedEGs, selectedTribes],
+    () => ({ places: selectedPlaces, peoples: selectedPeoples }),
+    [selectedPlaces, selectedPeoples],
   );
   const hasContexts = Object.values(selectedContexts).some((ids) => ids.length > 0);
 
@@ -134,11 +125,9 @@ export default function Manuscripts() {
     generate.clear();
   }
 
-  // ── Context option lists ─────────────────────────────────────────────────
-  const { data: states = [] } = useQuery({ queryKey: ["states"], queryFn: getAllStates });
-  const { data: localGovernments = [] } = useQuery({ queryKey: ["localGovernments"], queryFn: getAllLocalGovernments });
-  const { data: ethnicGroups = [] } = useQuery({ queryKey: ["ethnicGroups"], queryFn: getAllEthnicGroups });
-  const { data: tribes = [] } = useQuery({ queryKey: ["tribes"], queryFn: getAllTribes });
+  // ── Context option lists (the new places / peoples trees) ─────────────────
+  const { data: places = [] } = useQuery({ queryKey: ["places", "all"], queryFn: getAllPlaces });
+  const { data: peoples = [] } = useQuery({ queryKey: ["peoples", "all"], queryFn: getAllPeoples });
 
   // ── Manuscripts list ─────────────────────────────────────────────────────
   const { data: manuscripts = [], isLoading: loadingManuscripts } = useQuery({
@@ -162,10 +151,8 @@ export default function Manuscripts() {
         title: formData.title,
         manuscriptDescription: formData.description,
         contexts: {
-          states: formData.states ?? [],
-          localGovernments: formData.localGovernments ?? [],
-          ethnicGroups: formData.ethnicGroups ?? [],
-          tribes: formData.tribes ?? [],
+          places: formData.places ?? [],
+          peoples: formData.peoples ?? [],
         },
         educationLevel: formData.educationLevel,
         filePath,
@@ -197,10 +184,8 @@ export default function Manuscripts() {
         title: formData.title,
         manuscriptDescription: formData.description,
         contexts: {
-          states: formData.states ?? [],
-          localGovernments: formData.localGovernments ?? [],
-          ethnicGroups: formData.ethnicGroups ?? [],
-          tribes: formData.tribes ?? [],
+          places: formData.places ?? [],
+          peoples: formData.peoples ?? [],
         },
         educationLevel: formData.educationLevel,
         filePath,
@@ -231,10 +216,8 @@ export default function Manuscripts() {
     setValue("description", manuscript.manuscript_description ?? "");
     setValue("educationLevel", manuscript.education_level ?? "");
     const ctx = manuscript.contexts ?? {};
-    setValue("states", ctx.states ?? []);
-    setValue("localGovernments", ctx.localGovernments ?? []);
-    setValue("ethnicGroups", ctx.ethnicGroups ?? []);
-    setValue("tribes", ctx.tribes ?? []);
+    setValue("places", ctx.places ?? []);
+    setValue("peoples", ctx.peoples ?? []);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -273,10 +256,8 @@ export default function Manuscripts() {
 
   // One config drives both the drawer's selects and the summary bar's read-out.
   const contextGroups = [
-    { label: "States", items: states, itemLabel: "state_name", selected: selectedStates },
-    { label: "Local Govs", items: localGovernments, itemLabel: "name", selected: selectedLGs },
-    { label: "Ethnic Groups", items: ethnicGroups, itemLabel: "name", selected: selectedEGs },
-    { label: "Tribes", items: tribes, itemLabel: "name", selected: selectedTribes },
+    { label: "Places", items: places, itemLabel: "name", selected: selectedPlaces },
+    { label: "Peoples", items: peoples, itemLabel: "name", selected: selectedPeoples },
   ];
 
   if (authLoading) return <PageWrapper><p>Loading…</p></PageWrapper>;
@@ -286,9 +267,8 @@ export default function Manuscripts() {
       <PageTitle>Manuscripts</PageTitle>
       <p className="text-sm text-title opacity-60 leading-relaxed mb-6">
         Manuscripts are your personal records of Ikwerre cultural knowledge — stories, observations,
-        oral accounts, and research you want to preserve. Tag each manuscript with the states,
-        local governments, ethnic groups, or tribes it relates to so it can be connected to the
-        broader archive.
+        oral accounts, and research you want to preserve. Tag each manuscript with the places and
+        peoples it relates to so it can be connected to the broader archive.
       </p>
 
       {/* ── Editor: the manuscript's title, details bar, and body ─────────── */}
@@ -375,18 +355,12 @@ export default function Manuscripts() {
         onFileChange={handleFileChange}
         onRemoveFile={removeFile}
         currentFileName={editingManuscript?.file_name}
-        states={states}
-        localGovernments={localGovernments}
-        ethnicGroups={ethnicGroups}
-        tribes={tribes}
-        selectedStates={selectedStates}
-        selectedLGs={selectedLGs}
-        selectedEGs={selectedEGs}
-        selectedTribes={selectedTribes}
-        onStatesChange={(val) => setValue("states", val)}
-        onLGsChange={(val) => setValue("localGovernments", val)}
-        onEGsChange={(val) => setValue("ethnicGroups", val)}
-        onTribesChange={(val) => setValue("tribes", val)}
+        places={places}
+        peoples={peoples}
+        selectedPlaces={selectedPlaces}
+        selectedPeoples={selectedPeoples}
+        onPlacesChange={(val) => setValue("places", val)}
+        onPeoplesChange={(val) => setValue("peoples", val)}
         educationLevels={EDUCATION_LEVELS}
         educationLevel={educationLevel ?? ""}
         onEducationLevelChange={(val) => setValue("educationLevel", val)}
