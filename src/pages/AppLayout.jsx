@@ -17,7 +17,8 @@ export default function AppLayout() {
   const location = useLocation();
   const { user } = useAuth();
 
-  const showBack = location.pathname !== "/app/country";
+  // Hide Back on the hub itself; show it on every deeper page.
+  const showBack = location.pathname !== "/app";
 
   return (
     <StyledAppLayout $collapsed={collapsed}>

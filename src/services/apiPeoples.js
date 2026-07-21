@@ -1,10 +1,11 @@
 import supabase from "./supabase";
 
-// Flat list of all peoples, for pickers (e.g. the manuscript context selector).
+// Flat list of all peoples, for pickers (e.g. the manuscript context selector)
+// and the region picker's search index / has-children detection.
 export async function getAllPeoples() {
   const { data, error } = await supabase
     .from("peoples")
-    .select("id, name")
+    .select("id, name, parent_id, designation:designations(label)")
     .order("name");
   if (error) throw new Error(error.message);
   return data;
