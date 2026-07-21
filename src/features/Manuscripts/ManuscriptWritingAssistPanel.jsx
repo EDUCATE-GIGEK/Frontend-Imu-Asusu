@@ -41,20 +41,24 @@ function Suggestion({ item }) {
   );
 }
 
-export default function ManuscriptWritingAssistPanel({ hasContent, isPending, error, items, hasRun, onRun }) {
+export default function ManuscriptWritingAssistPanel({ hasContent, isPending, error, items, hasRun, onRun, hideRunButton, bare }) {
   const tone = items.filter((i) => i.category === "tone");
   const grammar = items.filter((i) => i.category === "grammar");
   const nothingFound = hasRun && items.length === 0;
+  const Root = bare ? "div" : Panel;
 
   return (
-    <Panel>
-      <Header>
-        <Title>AI writing assist</Title>
-        <AssistBtn type="button" disabled={!hasContent || isPending} onClick={onRun}>
-          {isPending ? "Checking…" : "Get AI feedback"}
-        </AssistBtn>
-      </Header>
+    <Root className={bare ? "flex flex-col gap-3" : undefined}>
+      {!hideRunButton && (
+        <Header>
+          <Title>AI writing assist</Title>
+          <AssistBtn type="button" disabled={!hasContent || isPending} onClick={onRun}>
+            {isPending ? "Checking…" : "Get AI feedback"}
+          </AssistBtn>
+        </Header>
+      )}
 
+      {isPending && !hasRun && <Hint>Reviewing your draft…</Hint>}
       {error && <ErrorText>{error.message}</ErrorText>}
 
       {items.length > 0 && (
@@ -84,6 +88,6 @@ export default function ManuscriptWritingAssistPanel({ hasContent, isPending, er
           </SuggestionList>
         </div>
       )}
-    </Panel>
+    </Root>
   );
 }

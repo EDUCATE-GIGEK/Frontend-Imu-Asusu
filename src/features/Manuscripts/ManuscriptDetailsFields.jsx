@@ -3,7 +3,9 @@ import tw from "tailwind-styled-components";
 // ── Styled components ────────────────────────────────────────────────────────
 const FieldWrapper = tw.div`flex flex-col gap-1`;
 const Label = tw.label`text-sm font-semibold text-title`;
+const Hint = tw.p`text-xs text-title opacity-50`;
 const Input = tw.input`border border-grey-info-outline rounded-lg px-3 py-2 text-sm text-title focus:outline-none focus:border-orange-400`;
+const Textarea = tw.textarea`border border-grey-info-outline rounded-lg px-3 py-2 text-sm text-title focus:outline-none focus:border-orange-400 resize-y min-h-20`;
 const FileZone = tw.div`border border-dashed border-grey-info-outline rounded-lg px-4 py-5 flex flex-col items-center gap-2 cursor-pointer hover:border-orange-400 transition-colors`;
 const FileZoneText = tw.p`text-sm text-title opacity-50`;
 const FileChip = tw.div`flex items-center gap-2 bg-orange-background-100 border border-orange-accent rounded-md px-3 py-1.5 text-sm text-title`;
@@ -33,6 +35,19 @@ export default function ManuscriptDetailsFields({
           {...register("title", { required: "Title is required" })}
         />
         {errors.title && <ErrorText>{errors.title.message}</ErrorText>}
+      </FieldWrapper>
+
+      <FieldWrapper>
+        <Label htmlFor="summary">
+          Summary <span className="font-normal opacity-40">(optional)</span>
+        </Label>
+        <Hint>A short description shown on this manuscript&rsquo;s card in the library.</Hint>
+        <Textarea
+          id="summary"
+          rows={3}
+          placeholder="e.g. Oral accounts of Ikwerre migration, gathered from elders."
+          {...register("summary")}
+        />
       </FieldWrapper>
 
       <FieldWrapper>
