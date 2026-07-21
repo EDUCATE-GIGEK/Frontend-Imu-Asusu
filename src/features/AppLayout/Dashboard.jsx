@@ -1,6 +1,6 @@
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
-import { GoChevronRight, GoChevronLeft, GoSignOut, GoHome, GoPlus, GoGlobe } from "react-icons/go";
+import { GoChevronRight, GoChevronLeft, GoSignOut, GoHome, GoPlus } from "react-icons/go";
 import tw from "tailwind-styled-components";
 import { useAuth } from "@/contexts/AuthContext";
 import { signOut } from "@/services/auth/signOut";
@@ -115,18 +115,6 @@ function Dashboard({ collapsed, onToggle }) {
 
       <NavSection className="mt-6">
         <NavLabel>Explore</NavLabel>
-
-        <NavLink
-          to="/app/explore"
-          className={({ isActive }) =>
-            isActive
-              ? "block rounded-lg px-3 py-2.5 text-sm font-medium no-underline bg-orange-300/50 text-title flex items-center gap-2"
-              : "block rounded-lg px-3 py-2.5 text-sm font-medium no-underline text-title opacity-70 hover:opacity-100 hover:bg-black/5 transition-all duration-150 flex items-center gap-2"
-          }
-        >
-          <GoGlobe size={15} />
-          My Regions
-        </NavLink>
 
         <NavBtn
           type="button"
