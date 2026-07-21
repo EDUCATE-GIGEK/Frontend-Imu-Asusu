@@ -1,6 +1,6 @@
 import supabase from "@/services/supabase";
 
-export async function signInWithOAuth({ provider = "google", redirectTo = `${window.location.origin}/app/country` } = {}) {
+export async function signInWithOAuth({ provider = "google", redirectTo = `${window.location.origin}/app` } = {}) {
   const { error } = await supabase.auth.signInWithOAuth({
     provider,
     options: { redirectTo },

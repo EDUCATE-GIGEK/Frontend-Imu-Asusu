@@ -1,10 +1,11 @@
 import supabase from "./supabase";
 
-// Flat list of all places, for pickers (e.g. the manuscript context selector).
+// Flat list of all places, for pickers (e.g. the manuscript context selector)
+// and the region picker's search index / has-children detection.
 export async function getAllPlaces() {
   const { data, error } = await supabase
     .from("places")
-    .select("id, name, designation:designations(label)")
+    .select("id, name, parent_id, designation:designations(label)")
     .order("level_rank", { nullsFirst: false })
     .order("name");
   if (error) throw new Error(error.message);
