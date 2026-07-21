@@ -1,5 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { getPlace, getChildPlaces, getPeoplesInPlace } from "@/services/apiPlaces";
+import {
+  getPlace,
+  getChildPlaces,
+  getPeoplesInPlace,
+  getDesignations,
+} from "@/services/apiPlaces";
 import { getEntriesInPlaceSubtree } from "@/services/apiEntries";
 
 // One generic hook for any node in the places tree, at any depth.
@@ -17,11 +22,24 @@ function usePlacePage(placeId) {
     enabled: !!placeId,
   });
 
-  const { data: peoples = [], isLoading: loadingPeoples } = useQuery({
+  const { data: rawPeoples = [], isLoading: loadingPeoples } = useQuery({
     queryKey: ["place-peoples", placeId],
     queryFn: () => getPeoplesInPlace(placeId),
     enabled: !!placeId,
   });
+
+  // peoples_in_place_subtree returns bare `peoples` rows (designation_id, no
+  // label), so attach the level label from the designations lookup — the People
+  // section filters on it.
+  const { data: designations = [] } = useQuery({
+    queryKey: ["designations"],
+    queryFn: getDesignations,
+  });
+  const labelById = new Map(designations.map((d) => [d.id, d.label]));
+  const peoples = rawPeoples.map((p) => ({
+    ...p,
+    designation: { label: labelById.get(p.designation_id) },
+  }));
 
   const { data: entries = [], isLoading: loadingEntries } = useQuery({
     queryKey: ["place-entries", placeId],

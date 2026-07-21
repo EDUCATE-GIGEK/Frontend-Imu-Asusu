@@ -5,6 +5,7 @@ import GroupedList from "@/ui/GroupedList";
 import InfoOption from "@/ui/InfoOption";
 import Spacer from "@/ui/Spacer";
 import Spinner from "@/ui/Spinner";
+import HistorySection from "@/features/Explore/HistorySection";
 
 // ── Styled components (match PlacePage / the app theme) ──────────────────────
 const ParentLink = tw(Link)`inline-block text-sm text-title opacity-50 hover:opacity-100 transition-opacity mb-2`;
@@ -22,7 +23,6 @@ const CardList = tw.div`flex flex-col gap-2.5`;
 const Card = tw.div`flex items-start gap-3 rounded-xl border border-grey-info-outline bg-white px-4 py-3`;
 const Tag = tw.span`shrink-0 text-[10px] font-semibold uppercase tracking-wide rounded px-1.5 py-0.5 bg-orange-background-100 text-title mt-0.5`;
 const CardTitle = tw.span`text-sm font-medium text-title`;
-const EmptyNote = tw.p`text-sm text-title opacity-40`;
 
 export default function PeoplePage() {
   const { id } = useParams();
@@ -122,22 +122,7 @@ export default function PeoplePage() {
         </GroupedList>
       )}
 
-      <GroupedList label="History">
-        <Spacer>
-          {entries.length === 0 ? (
-            <EmptyNote>No published entries yet for this group.</EmptyNote>
-          ) : (
-            <CardList>
-              {entries.map((e) => (
-                <Card key={e.id}>
-                  <Tag>{e.entry_type.replace(/_/g, " ")}</Tag>
-                  <CardTitle>{e.title}</CardTitle>
-                </Card>
-              ))}
-            </CardList>
-          )}
-        </Spacer>
-      </GroupedList>
+      <HistorySection entries={entries} nodeId={id} nodeKind="people" />
     </>
   );
 }

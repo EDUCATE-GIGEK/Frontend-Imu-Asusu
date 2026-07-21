@@ -12,6 +12,14 @@ export async function getAllPlaces() {
   return data;
 }
 
+// Lookup of every designation (id → level label). The places and peoples trees
+// share this table; used to label RPC rows that come back without the join.
+export async function getDesignations() {
+  const { data, error } = await supabase.from("designations").select("id, label");
+  if (error) throw new Error(error.message);
+  return data;
+}
+
 // A place node plus its level label (Country / State / LGA / …) from the
 // designations lookup. Reads the new generalized `places` tree.
 export async function getPlace(id) {

@@ -12,6 +12,7 @@ import Login from "./pages/Login";
 import About from "./pages/About";
 import PlacePage from "./pages/PlacePage";
 import PeoplePage from "./pages/PeoplePage";
+import Explore from "./pages/Explore";
 import PageNotFound from "./pages/PageNotFound";
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
 
           <Route path="app" element={<AppLayout />}>
             <Route index element={<Home />} />
+            <Route path="explore" element={<Explore />} />
             <Route path="place/:id" element={<PlacePage />} />
             <Route path="people/:id" element={<PeoplePage />} />
             <Route path="my-manuscripts" element={<Manuscripts />} />
