@@ -55,13 +55,16 @@ const CtaBtn = tw(Link)`
   bg-orange-accent text-title hover:brightness-95 transition-all
 `;
 
-const TileGrid = tw.div`grid grid-cols-1 sm:grid-cols-3 gap-4`;
+// Three columns only when there is real room (the 24rem sidebar + content
+// padding eat a lot of width); two columns below that so tile headings never
+// clip. min-w-0 lets tracks shrink instead of overflowing.
+const TileGrid = tw.div`grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4`;
 const Tile = tw(Link)`
-  flex flex-col gap-2 rounded-2xl border border-grey-info-outline bg-white p-5 no-underline
+  flex flex-col gap-2 rounded-2xl border border-grey-info-outline bg-white p-5 no-underline min-w-0
   hover:border-orange-accent hover:bg-orange-background-100 transition-colors
 `;
 const TileIcon = tw.span`flex items-center justify-center w-10 h-10 rounded-xl bg-orange-background-100 text-title`;
-const TileLabel = tw.span`font-heading text-lg font-bold text-title`;
+const TileLabel = tw.span`font-heading text-base font-bold text-title`;
 const TileBlurb = tw.span`text-xs text-title opacity-50 font-body`;
 
 export default function Home() {
