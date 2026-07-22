@@ -21,6 +21,13 @@ export const LANE_W = CARD_W + 56;
 // Lanes alternate around the centre: 0 stays on the spine, 1 goes right, 2 left,
 // 3 further right, and so on. Keeps the main line centred however many branches
 // open, instead of letting the graph drift off to one side.
+// Clear space either side of the card columns. Edges spanning more than
+// LONG_SPAN rows are routed out here rather than drawn across the cards between
+// their endpoints — an entry can legitimately point at another fifteen centuries
+// away, and a straight line for that reads as a scribble through the timeline.
+export const GUTTER = 78;
+export const LONG_SPAN = 3;
+
 export function laneOffset(lane) {
   if (lane === 0) return 0;
   const distance = Math.ceil(lane / 2);
@@ -91,16 +98,50 @@ export function layoutTimeline({ entries, relationships }) {
 
   for (const node of nodes) {
     node.offset = laneOffset(node.lane);
-    node.x = (node.offset + half) * LANE_W + (LANE_W - CARD_W) / 2;
+    node.x = GUTTER + (node.offset + half) * LANE_W + (LANE_W - CARD_W) / 2;
     node.y = node.step * STEP_H;
   }
 
+  // Which (lane, step) cells actually hold a card. An edge only needs to be bent
+  // if something is genuinely in its way — bending on distance alone produces
+  // C-shaped detours around empty space, because the rows an edge spans usually
+  // hold their cards on OTHER lanes.
+  const occupied = new Set(nodes.map((n) => `${n.offset}:${n.step}`));
+  const isBlocked = (offset, fromStep, toStep) => {
+    for (let step = fromStep + 1; step < toStep; step += 1) {
+      if (occupied.has(`${offset}:${step}`)) return true;
+    }
+    return false;
+  };
+
   const edges = relationships
     .map((rel) => {
-      const from = nodeByEntryId.get(rel.from_entry_id);
-      const to = nodeByEntryId.get(rel.to_entry_id);
-      if (!from || !to || from === to) return null;
-      return { ...rel, from, to };
+      const a = nodeByEntryId.get(rel.from_entry_id);
+      const b = nodeByEntryId.get(rel.to_entry_id);
+      if (!a || !b || a === b) return null;
+      // Always draw earlier → later; the relation's own direction is carried by
+      // its arrowhead and label, not by which way the line is built.
+      const [from, to] = a.step <= b.step ? [a, b] : [b, a];
+      const span = to.step - from.step;
+
+      const blocked =
+        isBlocked(from.offset, from.step, to.step) ||
+        isBlocked(to.offset, from.step, to.step);
+
+      let route;
+      if (!blocked) {
+        // Clear path: the shortest line that reaches, whatever the distance.
+        route = from.offset === to.offset ? "straight" : "bezier";
+      } else if (span > LONG_SPAN) {
+        // A modest bow over a long span lands the line in the gap between the
+        // card columns, which reads worse than either a straight line or a clean
+        // detour. Long obstructed edges go out to the margin instead.
+        route = "gutter";
+      } else {
+        route = from.offset === to.offset ? "arc" : "bezier";
+      }
+
+      return { ...rel, from, to, span, route };
     })
     .filter(Boolean);
 
@@ -108,7 +149,7 @@ export function layoutTimeline({ entries, relationships }) {
     nodes,
     edges,
     laneCount: Math.max(1, laneBusyUntil.length),
-    width: (2 * half + 1) * LANE_W,
+    width: (2 * half + 1) * LANE_W + 2 * GUTTER,
     height: nodes.length * STEP_H,
   };
 }

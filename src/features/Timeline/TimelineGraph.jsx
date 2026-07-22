@@ -4,6 +4,8 @@ import {
   layoutTimeline,
   CARD_W,
   CARD_H,
+  STEP_H,
+  GUTTER,
   RELATION_STYLE,
   EDGE_COLOR,
   CONTRADICTS_COLOR,
@@ -49,24 +51,45 @@ const Empty = tw.p`text-sm text-title opacity-50 py-8`;
 // Same lane but distant: an arc bowed out to the side, so the line does not cut
 // straight through every card sitting between the two endpoints.
 // Different lane: a bezier, reading as a departure from the spine.
-function edgePath(a, b) {
-  const [from, to] = a.step <= b.step ? [a, b] : [b, a];
+// The route is decided in the layout, which knows which cells hold cards. Here we
+// only turn that decision into a path. Edges leave the earlier card's bottom edge
+// and arrive at the later card's top edge in every case.
+function edgePath(edge, canvasWidth) {
+  const { from, to, route, span } = edge;
   const x1 = from.x + CARD_W / 2;
   const y1 = from.y + CARD_H;
   const x2 = to.x + CARD_W / 2;
   const y2 = to.y;
 
-  if (from.offset === to.offset) {
-    const gap = to.step - from.step;
-    if (gap <= 1) return `M ${x1} ${y1} L ${x2} ${y2}`;
-    // Bow away from centre so the arc clears the intervening cards.
-    const direction = from.offset >= 0 ? 1 : -1;
-    const bow = direction * (CARD_W / 2 + 26 + gap * 4);
-    return `M ${x1} ${y1} C ${x1 + bow} ${y1}, ${x2 + bow} ${y2}, ${x2} ${y2}`;
-  }
+  switch (route) {
+    // Nothing in the way — the shortest honest line.
+    case "straight":
+      return `M ${x1} ${y1} L ${x2} ${y2}`;
 
-  const mid = (y1 + y2) / 2;
-  return `M ${x1} ${y1} C ${x1} ${mid}, ${x2} ${mid}, ${x2} ${y2}`;
+    // Same lane with cards in between: bow just far enough to clear them.
+    case "arc": {
+      const direction = from.offset >= 0 ? 1 : -1;
+      const bow = direction * (CARD_W / 2 + 30);
+      return `M ${x1} ${y1} C ${x1 + bow} ${y1}, ${x2 + bow} ${y2}, ${x2} ${y2}`;
+    }
+
+    // Far apart and genuinely obstructed: route out to the margin, clear of the
+    // card columns entirely, rather than cutting across the whole timeline.
+    case "gutter": {
+      // Ties go left: lane 1 is the first branch and opens to the right, so the
+      // left margin is the emptier side for an edge running down the spine.
+      const right = from.offset + to.offset > 0;
+      const gx = right ? canvasWidth - GUTTER / 2 : GUTTER / 2;
+      const pull = Math.min(span * 6, STEP_H);
+      return `M ${x1} ${y1} C ${gx} ${y1 + pull}, ${gx} ${y2 - pull}, ${x2} ${y2}`;
+    }
+
+    // Lane change over a short span: a plain S-curve reads as a branch.
+    default: {
+      const mid = (y1 + y2) / 2;
+      return `M ${x1} ${y1} C ${x1} ${mid}, ${x2} ${mid}, ${x2} ${y2}`;
+    }
+  }
 }
 
 export default function TimelineGraph({ timeline, selectedId, onSelect }) {
@@ -115,7 +138,7 @@ export default function TimelineGraph({ timeline, selectedId, onSelect }) {
             return (
               <path
                 key={edge.id}
-                d={edgePath(edge.from, edge.to)}
+                d={edgePath(edge, width)}
                 fill="none"
                 stroke={contradicts ? CONTRADICTS_COLOR : EDGE_COLOR}
                 strokeWidth={touchesSelection ? style.width + 0.75 : style.width}
