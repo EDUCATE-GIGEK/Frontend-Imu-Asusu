@@ -2,9 +2,8 @@ import { useMemo } from "react";
 import tw from "tailwind-styled-components";
 import {
   layoutTimeline,
-  ROW_H,
-  LANE_W,
   CARD_W,
+  CARD_H,
   RELATION_STYLE,
   EDGE_COLOR,
   CONTRADICTS_COLOR,
@@ -13,8 +12,10 @@ import {
 // surfaces, and BCE / approximate / era-fallback handling lives in one place.
 import { formatPeriod } from "@/features/Explore/entryFormat";
 
-const Scroll = tw.div`overflow-x-auto pb-4`;
-const Canvas = tw.div`relative`;
+// The canvas is centred in the page so the spine sits down the middle; it only
+// scrolls sideways when branches make it wider than the available column.
+const Scroll = tw.div`overflow-x-auto pb-4 flex justify-center`;
+const Canvas = tw.div`relative shrink-0`;
 
 const Card = tw.button`
   absolute text-left bg-white border rounded-md px-3 py-2.5 cursor-pointer
@@ -39,16 +40,31 @@ const Pill = tw.span`
 
 const Empty = tw.p`text-sm text-title opacity-50 py-8`;
 
-// Edge from the bottom of one card to the top of another. Same lane draws a
-// straight drop; a lane change bows sideways so parallel edges stay tellable
-// apart instead of overlapping into one thick line.
-function edgePath(from, to) {
-  const x1 = from.lane * LANE_W + CARD_W / 2;
-  const y1 = from.row * ROW_H + ROW_H - 22;
-  const x2 = to.lane * LANE_W + CARD_W / 2;
-  const y2 = to.row * ROW_H + 4;
+// Edge from the bottom of one card to the top of the next. Time runs down, so
+// the earlier endpoint always leaves from its bottom edge regardless of which
+// way the relation points — a `derived_from` running back up the page still
+// attaches at the two cards' facing edges rather than doubling through them.
+//
+// Same lane and adjacent: a straight drop down the spine.
+// Same lane but distant: an arc bowed out to the side, so the line does not cut
+// straight through every card sitting between the two endpoints.
+// Different lane: a bezier, reading as a departure from the spine.
+function edgePath(a, b) {
+  const [from, to] = a.step <= b.step ? [a, b] : [b, a];
+  const x1 = from.x + CARD_W / 2;
+  const y1 = from.y + CARD_H;
+  const x2 = to.x + CARD_W / 2;
+  const y2 = to.y;
 
-  if (from.lane === to.lane) return `M ${x1} ${y1} L ${x2} ${y2}`;
+  if (from.offset === to.offset) {
+    const gap = to.step - from.step;
+    if (gap <= 1) return `M ${x1} ${y1} L ${x2} ${y2}`;
+    // Bow away from centre so the arc clears the intervening cards.
+    const direction = from.offset >= 0 ? 1 : -1;
+    const bow = direction * (CARD_W / 2 + 26 + gap * 4);
+    return `M ${x1} ${y1} C ${x1 + bow} ${y1}, ${x2 + bow} ${y2}, ${x2} ${y2}`;
+  }
+
   const mid = (y1 + y2) / 2;
   return `M ${x1} ${y1} C ${x1} ${mid}, ${x2} ${mid}, ${x2} ${y2}`;
 }
@@ -111,17 +127,13 @@ export default function TimelineGraph({ timeline, selectedId, onSelect }) {
           })}
         </svg>
 
-        {nodes.map(({ entry, row, lane }) => (
+        {nodes.map(({ entry, x, y }) => (
           <Card
             key={entry.id}
             type="button"
             $selected={entry.id === selectedId}
             onClick={() => onSelect(entry)}
-            style={{
-              top: row * ROW_H,
-              left: lane * LANE_W,
-              width: CARD_W,
-            }}
+            style={{ left: x, top: y, width: CARD_W, height: CARD_H }}
           >
             {/* Undated is a real state here, not missing data — oral tradition
                 often carries no year at all. Say so rather than showing blank. */}

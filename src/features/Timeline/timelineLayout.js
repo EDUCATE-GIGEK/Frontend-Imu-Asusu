@@ -1,27 +1,38 @@
 // Lane assignment for the time-anchored graph.
 //
-// Rows are chronological (one row per entry, in order). Lanes are horizontal
-// position, assigned so that a connected chain of entries stays in the same lane
-// and a branch opens a new one — the same idea as a git commit graph.
+// Time runs DOWN the page: `step` is chronological position (y), `lane` is which
+// branch a node sits on (x). Lane 0 is the main line and is CENTRED, with
+// branches alternating to its right and left — so the spine reads straight down
+// the middle of the page and side threads are visibly departures from it.
 //
-// Rows are ORDINAL, not to scale. A true time axis over this data would put 15 BC
-// and 400 AD almost on top of each other and then leave a 400-year gap before
-// 843, while cramming 1857–2001 into a sliver. Even spacing keeps every entry
-// readable; the year is printed on the card, which is what people actually read.
+// Steps are ORDINAL, not to scale. A true time axis over this data would put
+// 15 BC and 400 AD almost on top of each other, leave a 400-year gap before 843,
+// then cram 1857–2001 into a sliver. Even spacing keeps every entry readable and
+// the year is printed on the card, which is what people actually read.
 
-// Row pitch has to clear a two-line title plus the badge row, or adjacent cards
-// touch and the edges between them have nowhere to show.
-export const ROW_H = 118;
-export const LANE_W = 268;
 export const CARD_W = 236;
+export const CARD_H = 92;
 
-// Entries with no period_start (oral tradition, 'era'/'relative' precision) can't
-// take a position on a chronological axis at all. They are laid out after the
-// dated ones and flagged, so the UI can separate them instead of implying a date
-// the source never gave.
+// Pitch between chronological steps and between branch lanes. Both need to clear
+// the card plus enough gap for an edge to be visible running between them.
+export const STEP_H = CARD_H + 46;
+export const LANE_W = CARD_W + 56;
+
+// Lanes alternate around the centre: 0 stays on the spine, 1 goes right, 2 left,
+// 3 further right, and so on. Keeps the main line centred however many branches
+// open, instead of letting the graph drift off to one side.
+export function laneOffset(lane) {
+  if (lane === 0) return 0;
+  const distance = Math.ceil(lane / 2);
+  return lane % 2 === 1 ? distance : -distance;
+}
+
+// Undated entries (oral tradition, 'era'/'relative' precision) can't take a
+// position on a chronological axis at all. They sort to the end and are counted
+// separately, so the UI can say so rather than implying a date no source gave.
 export function layoutTimeline({ entries, relationships }) {
-  const rows = entries.map((entry, i) => ({ entry, row: i, lane: 0 }));
-  const rowByEntryId = new Map(rows.map((r) => [r.entry.id, r]));
+  const nodes = entries.map((entry, i) => ({ entry, step: i, lane: 0 }));
+  const nodeByEntryId = new Map(nodes.map((n) => [n.entry.id, n]));
 
   // Undirected adjacency: for layout purposes an edge means "these two belong
   // near each other", regardless of which way the relation points.
@@ -31,8 +42,8 @@ export function layoutTimeline({ entries, relationships }) {
     neighbours.get(id).push(node);
   };
   for (const rel of relationships) {
-    const a = rowByEntryId.get(rel.from_entry_id);
-    const b = rowByEntryId.get(rel.to_entry_id);
+    const a = nodeByEntryId.get(rel.from_entry_id);
+    const b = nodeByEntryId.get(rel.to_entry_id);
     if (!a || !b || a === b) continue;
     link(a.entry.id, b);
     link(b.entry.id, a);
@@ -40,50 +51,65 @@ export function layoutTimeline({ entries, relationships }) {
   const neighboursOf = (node) => neighbours.get(node.entry.id) ?? [];
 
   // A lane stays RESERVED from a node until its furthest later neighbour is
-  // placed, so an unrelated entry falling between the two is pushed into a lane
-  // of its own. That reservation is what produces visible branching — without
-  // it every node inherits lane 0 and the graph degenerates into a single column.
-  const laneBusyUntil = []; // lane -> last row it is still occupied for
+  // placed, so an unrelated entry falling between the two is pushed onto a lane
+  // of its own. That reservation is what produces visible branching — without it
+  // every node inherits lane 0 and the graph degenerates into a straight line.
+  const laneBusyUntil = []; // lane -> last step it is still occupied for
   const laneHeldFor = []; // lane -> entry id the lane is being kept for
 
-  for (const node of rows) {
+  for (const node of nodes) {
     const earlier = neighboursOf(node)
-      .filter((n) => n.row < node.row)
-      .sort((a, b) => b.row - a.row);
+      .filter((n) => n.step < node.step)
+      .sort((a, b) => b.step - a.step);
     const later = neighboursOf(node)
-      .filter((n) => n.row > node.row)
-      .sort((a, b) => a.row - b.row);
+      .filter((n) => n.step > node.step)
+      .sort((a, b) => a.step - b.step);
 
     // Prefer a lane explicitly being held for this entry; otherwise the first
     // lane whose reservation has expired.
     let lane = earlier.find((p) => laneHeldFor[p.lane] === node.entry.id)?.lane;
     if (lane === undefined) {
       lane = 0;
-      while (laneBusyUntil[lane] !== undefined && laneBusyUntil[lane] > node.row) lane += 1;
+      while (laneBusyUntil[lane] !== undefined && laneBusyUntil[lane] > node.step) lane += 1;
     }
 
     node.lane = lane;
-    laneBusyUntil[lane] = later.length ? later.at(-1).row : node.row;
+    // Reserve only as far as the NEAREST later neighbour, not the furthest. A
+    // long-duration entry holding the main lane for its whole edge range shoves
+    // the chronological spine down into a branch lane and makes the timeline
+    // hard to follow. Long-range edges are drawn as arcs over the top instead.
+    laneBusyUntil[lane] = later.length ? later[0].step : node.step;
     laneHeldFor[lane] = later[0]?.entry.id ?? null;
   }
 
-  const laneCount = Math.max(1, laneBusyUntil.length);
+  // Resolve lanes to signed offsets around the centre. The canvas is padded
+  // SYMMETRICALLY — half the width either side of lane 0 — so the spine lands
+  // dead centre even when every branch happens to open on the same side. Without
+  // this the canvas centres but the main line sits visibly off to one edge.
+  const offsets = nodes.map((n) => laneOffset(n.lane));
+  const half = Math.max(0, ...offsets.map(Math.abs));
+
+  for (const node of nodes) {
+    node.offset = laneOffset(node.lane);
+    node.x = (node.offset + half) * LANE_W + (LANE_W - CARD_W) / 2;
+    node.y = node.step * STEP_H;
+  }
 
   const edges = relationships
     .map((rel) => {
-      const from = rowByEntryId.get(rel.from_entry_id);
-      const to = rowByEntryId.get(rel.to_entry_id);
+      const from = nodeByEntryId.get(rel.from_entry_id);
+      const to = nodeByEntryId.get(rel.to_entry_id);
       if (!from || !to || from === to) return null;
       return { ...rel, from, to };
     })
     .filter(Boolean);
 
   return {
-    nodes: rows,
+    nodes,
     edges,
-    laneCount,
-    width: laneCount * LANE_W,
-    height: rows.length * ROW_H,
+    laneCount: Math.max(1, laneBusyUntil.length),
+    width: (2 * half + 1) * LANE_W,
+    height: nodes.length * STEP_H,
   };
 }
 
