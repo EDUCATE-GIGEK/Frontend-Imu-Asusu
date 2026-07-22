@@ -1,31 +1,69 @@
-// Curated "suggested" regions surfaced pre-expanded at the top of the region
-// picker. For now the platform focuses on the Ikwerre people group, so the only
-// template is the Ikwerre lineage.
+// Suggested region lineages for the onboarding picker.
 //
-// Entries are referenced by seeded id and rendered with their REAL names fetched
-// from the DB (see RegionPicker) — the labels here are only fallbacks for the
-// chip/search text. If a seeded id is missing (e.g. after a reseed) it simply
-// drops out of the suggested list; nothing breaks.
+// These are DERIVED from the database, never hardcoded. Any people group that
+// has visible (published, non-restricted) entries becomes suggestible on its
+// own, ranked by how much there is to read, and carries its place lineage
+// resolved by walking `parent_id` up from its homeland.
 //
-// NOTE: reseeding the database changes these ids — this file is the single place
-// to update, replacing the old hardcoded DEFAULT_EXPLORE_PLACE_ID in Dashboard.
+// The practical consequence: seeding a new group is enough. Add the Rumantschs,
+// publish their entries, and they appear here — no id to copy, no file to edit,
+// nothing to go stale when the database is reseeded. The previous version of
+// this file held hand-written UUIDs that silently dropped out of the UI whenever
+// they drifted.
 
-export const IKWERRE_TEMPLATE = {
-  id: "ikwerre",
-  label: "Ikwerre",
-  // Ordered parent → child so the pre-expanded lineage reads top-down.
-  places: [
-    { id: "c4f43508-5f39-47ff-80e1-25d67e3a01ac", fallbackName: "Africa" },
-    { id: "a735a0fb-a76c-436f-b38e-d8feb9373aa9", fallbackName: "Nigeria" },
-    { id: "1c5d40b1-a449-407f-8bfd-3741867d6c3a", fallbackName: "Rivers State" },
-    { id: "033606c8-e15c-46e9-a78d-5c708b3fadcc", fallbackName: "Ikwerre LGA" },
-    { id: "493507d9-56f1-43b9-9742-80cc544f1f16", fallbackName: "Port Harcourt" },
-  ],
-  peoples: [
-    { id: "8a03a5ae-495b-43a0-833e-a3955b037332", fallbackName: "Ikwerre" },
-  ],
-};
+// How many groups to surface. Beyond ~3 the "suggested" section stops being a
+// shortcut and just duplicates the full tree below it.
+const MAX_SUGGESTED = 3;
 
-// The active suggested groups. Add more people-group templates here as they come
-// online; the picker renders each pinned above the full browsable tree.
-export const SUGGESTED_TEMPLATES = [IKWERRE_TEMPLATE];
+// Walk a place up to its root, returning the chain parent → child so the
+// lineage reads top-down (Europe → Switzerland → Graubünden).
+function lineageOf(placeId, placesById) {
+  const chain = [];
+  let node = placesById.get(placeId);
+  // Guard against a cyclic parent_id rather than hanging the picker.
+  const seen = new Set();
+  while (node && !seen.has(node.id)) {
+    seen.add(node.id);
+    chain.unshift(node);
+    node = node.parent_id ? placesById.get(node.parent_id) : null;
+  }
+  return chain;
+}
+
+// Prefer the homeland link; fall back to any association so a group with only
+// diaspora/historical places still gets a lineage instead of none.
+function anchorPlaceIdFor(peopleId, peoplePlaces) {
+  const links = peoplePlaces.filter((pp) => pp.people_id === peopleId);
+  const homeland = links.find((pp) => pp.relationship === "homeland");
+  return (homeland ?? links[0])?.place_id ?? null;
+}
+
+export function buildSuggestedTemplates({
+  peoples = [],
+  places = [],
+  peoplePlaces = [],
+  entryCounts = new Map(),
+  limit = MAX_SUGGESTED,
+}) {
+  const placesById = new Map(places.map((p) => [p.id, p]));
+
+  return peoples
+    .map((people) => ({ people, entryCount: entryCounts.get(people.id) ?? 0 }))
+    // A group with nothing readable is not a suggestion, it's a dead end.
+    .filter(({ entryCount }) => entryCount > 0)
+    .sort(
+      (a, b) =>
+        b.entryCount - a.entryCount || a.people.name.localeCompare(b.people.name),
+    )
+    .slice(0, limit)
+    .map(({ people, entryCount }) => {
+      const anchorId = anchorPlaceIdFor(people.id, peoplePlaces);
+      return {
+        id: people.id,
+        label: people.name,
+        entryCount,
+        places: anchorId ? lineageOf(anchorId, placesById) : [],
+        peoples: [people],
+      };
+    });
+}

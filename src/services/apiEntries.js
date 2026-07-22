@@ -20,3 +20,22 @@ export async function getEntriesInPeopleSubtree(peopleId) {
   if (error) throw new Error(error.message);
   return data;
 }
+
+// How many *visible* entries each people group has, as a Map(people_id -> count).
+//
+// RLS does the filtering, which is the point: a group whose entries are all still
+// in_review counts as 0, so anything derived from this — like the onboarding
+// suggestions — can never point a new user at a group with nothing to read.
+export async function getEntryCountsByPeople() {
+  const { data, error } = await supabase
+    .from("entries")
+    .select("people_id")
+    .not("people_id", "is", null);
+  if (error) throw new Error(error.message);
+
+  const counts = new Map();
+  for (const { people_id } of data ?? []) {
+    counts.set(people_id, (counts.get(people_id) ?? 0) + 1);
+  }
+  return counts;
+}

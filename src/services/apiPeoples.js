@@ -47,6 +47,16 @@ export async function getPlacesForPeople(peopleId) {
     .map((row) => ({ ...row.place, relationship: row.relationship }));
 }
 
+// Every people↔place link in one call. Used to derive a suggested group's place
+// lineage during onboarding without hardcoding ids.
+export async function getAllPeoplePlaces() {
+  const { data, error } = await supabase
+    .from("people_places")
+    .select("people_id, place_id, relationship");
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
 // The languages of a people.
 export async function getLanguagesForPeople(peopleId) {
   const { data, error } = await supabase

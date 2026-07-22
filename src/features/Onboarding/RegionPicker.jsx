@@ -3,8 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { GoChevronRight, GoCheck, GoX, GoSearch } from "react-icons/go";
 import tw from "tailwind-styled-components";
 import { getAllPlaces } from "@/services/apiPlaces";
-import { getAllPeoples } from "@/services/apiPeoples";
-import { SUGGESTED_TEMPLATES } from "./regionTemplates";
+import { getAllPeoples, getAllPeoplePlaces } from "@/services/apiPeoples";
+import { getEntryCountsByPeople } from "@/services/apiEntries";
+import { buildSuggestedTemplates } from "./regionTemplates";
 import Spinner from "@/ui/Spinner";
 
 // ── Region identity ─────────────────────────────────────────────────────────
@@ -39,6 +40,7 @@ const SearchInput = tw.input`
 
 const TreeScroll = tw.div`max-h-[22rem] overflow-y-auto pr-1 flex flex-col gap-0.5`;
 const GroupLabel = tw.p`text-xs font-semibold text-title opacity-40 uppercase tracking-widest px-1 mt-3 mb-1`;
+const GroupCount = tw.span`ml-2 normal-case tracking-normal font-normal opacity-70`;
 
 const Row = tw.div`flex items-center gap-1 rounded-lg hover:bg-black/[0.03] transition-colors`;
 const Caret = tw.button`
@@ -71,12 +73,27 @@ export default function RegionPicker({ value, onChange }) {
     queryKey: ["all-peoples"],
     queryFn: getAllPeoples,
   });
+  const { data: peoplePlaces = [], isLoading: loadingLinks } = useQuery({
+    queryKey: ["all-people-places"],
+    queryFn: getAllPeoplePlaces,
+  });
+  const { data: entryCounts = new Map(), isLoading: loadingCounts } = useQuery({
+    queryKey: ["entry-counts-by-people"],
+    queryFn: getEntryCountsByPeople,
+  });
 
-  const loading = loadingPlaces || loadingPeoples;
+  const loading = loadingPlaces || loadingPeoples || loadingLinks || loadingCounts;
 
   // Index the flat lists into by-id + children-by-parent maps so we can render
   // the tree, detect leaves (no caret), and resolve real names client-side.
   const idx = useMemo(() => build(places, peoples), [places, peoples]);
+
+  // Suggestions are derived from the data, so a newly seeded people group shows
+  // up here on its own once its entries are published.
+  const suggested = useMemo(
+    () => buildSuggestedTemplates({ peoples, places, peoplePlaces, entryCounts }),
+    [peoples, places, peoplePlaces, entryCounts],
+  );
 
   const selectedKeys = useMemo(
     () => new Set(value.map((r) => keyOf(r.kind, r.id))),
@@ -192,19 +209,20 @@ export default function RegionPicker({ value, onChange }) {
           <SearchResults idx={idx} q={q} renderFlat={renderFlat} />
         ) : (
           <>
-            {/* Suggested: curated templates rendered as pre-expanded lineages. */}
-            {SUGGESTED_TEMPLATES.map((tpl) => {
-              const placeItems = tpl.places.map((t) => idx.placesById.get(t.id)).filter(Boolean);
-              const peopleItems = tpl.peoples.map((t) => idx.peoplesById.get(t.id)).filter(Boolean);
-              if (placeItems.length === 0 && peopleItems.length === 0) return null;
-              return (
-                <div key={tpl.id}>
-                  <GroupLabel>Suggested — {tpl.label}</GroupLabel>
-                  {placeItems.map((p) => renderFlat("place", p, idx.depthOf("place", p.id)))}
-                  {peopleItems.map((p) => renderFlat("people", p, 0))}
-                </div>
-              );
-            })}
+            {/* Suggested: derived per people group, rendered as a pre-expanded
+                lineage so the user sees where the group sits before picking. */}
+            {suggested.map((tpl) => (
+              <div key={tpl.id}>
+                <GroupLabel>
+                  Suggested — {tpl.label}
+                  <GroupCount>
+                    {tpl.entryCount} {tpl.entryCount === 1 ? "entry" : "entries"}
+                  </GroupCount>
+                </GroupLabel>
+                {tpl.places.map((p, depth) => renderFlat("place", p, depth))}
+                {tpl.peoples.map((p) => renderFlat("people", p, tpl.places.length))}
+              </div>
+            ))}
 
             {/* Full browsable tree (collapsed by default). */}
             <GroupLabel>All places</GroupLabel>
@@ -247,22 +265,10 @@ function SearchResults({ idx, q, renderFlat }) {
 // Build lookup structures from the two flat lists.
 function build(places, peoples) {
   const placesById = new Map(places.map((p) => [p.id, p]));
-  const peoplesById = new Map(peoples.map((p) => [p.id, p]));
 
   const childrenOf = (kind, id) => {
     const list = kind === "place" ? places : peoples;
     return list.filter((n) => n.parent_id === id);
-  };
-
-  const depthOf = (kind, id) => {
-    const byId = kind === "place" ? placesById : peoplesById;
-    let depth = 0;
-    let node = byId.get(id);
-    while (node?.parent_id) {
-      depth += 1;
-      node = byId.get(node.parent_id);
-    }
-    return depth;
   };
 
   // For a selected place, the name of its nearest ancestor that is ALSO selected
@@ -281,11 +287,9 @@ function build(places, peoples) {
     places,
     peoples,
     placesById,
-    peoplesById,
     rootPlaces: places.filter((p) => !p.parent_id),
     rootPeoples: peoples.filter((p) => !p.parent_id),
     childrenOf,
-    depthOf,
     selectedAncestorName,
   };
 }
