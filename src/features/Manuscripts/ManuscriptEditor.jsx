@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
+import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -14,7 +14,7 @@ const SYMBOLS = [
   "→", "←", "↔", "•", "…", "‰", "√", "∞", "½", "¼", "¾", "α", "β", "π",
 ];
 
-const Toolbar = tw.div`flex flex-wrap items-center gap-1 border border-grey-info-outline rounded-t-lg bg-orange-background-100/40 px-2 py-1.5`;
+const Toolbar = tw.div`flex flex-wrap items-center gap-1 shrink-0 border-b border-grey-info-outline bg-orange-background-100/40 px-3 py-1.5`;
 const ToolBtn = tw.button`
   min-w-8 h-8 px-2 rounded-md text-sm text-title cursor-pointer border-0 bg-transparent
   hover:bg-orange-background-100 transition-colors
@@ -23,8 +23,17 @@ const ToolBtn = tw.button`
 const ToolDivider = tw.span`w-px h-5 bg-grey-info-outline mx-1`;
 const SymbolPopover = tw.div`absolute z-10 mt-1 grid grid-cols-7 gap-1 bg-white border border-grey-info-outline rounded-lg p-2 shadow-lg`;
 const SymbolBtn = tw.button`w-7 h-7 rounded text-sm text-title cursor-pointer border-0 bg-transparent hover:bg-orange-background-100`;
-const EditorWrapper = tw.div`border border-t-0 border-grey-info-outline rounded-b-lg px-3 py-2 min-h-28`;
-const CharCount = tw.p`text-xs text-title opacity-40 mt-1 text-right`;
+
+// Code-editor surface: a line-number gutter beside the writing area. The
+// surface scrolls as one, so the gutter tracks the text while it scrolls.
+const EditorSurface = tw.div`flex flex-1 min-h-0 overflow-y-auto bg-white`;
+const Gutter = tw.div`
+  relative shrink-0 w-11 select-none border-r border-grey-info-outline
+  bg-orange-background-100/30 py-4 text-right text-xs font-mono text-title/35
+`;
+const LineNo = tw.span`absolute right-2 leading-none`;
+const EditorArea = tw.div`flex-1 min-w-0 px-5 py-4`;
+const CharCount = tw.p`text-xs text-title opacity-40 mt-1 text-right shrink-0`;
 
 const ManuscriptEditor = forwardRef(function ManuscriptEditor({
   content,
@@ -33,10 +42,30 @@ const ManuscriptEditor = forwardRef(function ManuscriptEditor({
   suggestions = [],
   onSuggestionsLocated,
   onResolve,
+  toolbarActions = null,
 }, ref) {
   const [showSymbols, setShowSymbols] = useState(false);
   const [active, setActive] = useState(null); // { item, top, left } for the open popover
+  const [lineMarks, setLineMarks] = useState([{ n: 1, top: 0 }]);
   const anchorRef = useRef(null);
+  const gutterRef = useRef(null);
+  const areaRef = useRef(null);
+
+  // Place a line number at the top of each top-level block, measured relative to
+  // the gutter so paddings on either column never throw the alignment off. It's
+  // one number per block (paragraph/heading/list), the Overleaf-style read-out.
+  const recomputeLines = useCallback(() => {
+    const gutter = gutterRef.current;
+    const tiptap = areaRef.current?.querySelector(".tiptap");
+    if (!gutter || !tiptap) return;
+    const base = gutter.getBoundingClientRect().top;
+    const blocks = Array.from(tiptap.children);
+    const marks = blocks.map((el, i) => ({
+      n: i + 1,
+      top: Math.round(el.getBoundingClientRect().top - base),
+    }));
+    setLineMarks(marks.length ? marks : [{ n: 1, top: 12 }]);
+  }, []);
 
   // Route the extension's located callback through a ref so the latest handler
   // is used without re-creating the editor when the prop identity changes.
@@ -52,8 +81,27 @@ const ManuscriptEditor = forwardRef(function ManuscriptEditor({
       ManuscriptSuggestionHighlight.configure({ onLocated: (located) => locatedRef.current?.(located) }),
     ],
     content: content || "",
-    onUpdate: ({ editor }) => onChange?.(editor.getHTML()),
+    onUpdate: ({ editor }) => {
+      onChange?.(editor.getHTML());
+      requestAnimationFrame(recomputeLines);
+    },
   });
+
+  // Keep the gutter aligned as the document reflows: on mount, on content
+  // height changes (wrapping, images), and on window resizes.
+  useEffect(() => {
+    if (!editor) return;
+    const tiptap = areaRef.current?.querySelector(".tiptap");
+    if (!tiptap) return;
+    recomputeLines();
+    const ro = new ResizeObserver(() => recomputeLines());
+    ro.observe(tiptap);
+    window.addEventListener("resize", recomputeLines);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", recomputeLines);
+    };
+  }, [editor, recomputeLines]);
 
   // Push the current suggestion set into the editor whenever it changes; the
   // extension resolves excerpts to positions and reports back via onLocated.
@@ -116,7 +164,7 @@ const ManuscriptEditor = forwardRef(function ManuscriptEditor({
   }
 
   return (
-    <div>
+    <div className="flex flex-col h-full min-h-0">
       <Toolbar>
         <ToolBtn type="button" data-active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()} title="Bold">
           <strong>B</strong>
@@ -157,12 +205,26 @@ const ManuscriptEditor = forwardRef(function ManuscriptEditor({
             </SymbolPopover>
           )}
         </div>
+
+        {/* AI actions live at the toolbar's right edge, supplied by the page. */}
+        {toolbarActions && (
+          <div className="ml-auto flex items-center gap-1.5" onMouseDown={(e) => e.stopPropagation()}>
+            {toolbarActions}
+          </div>
+        )}
       </Toolbar>
 
-      <div ref={anchorRef} className="relative" onMouseDown={handleEditorMouseDown}>
-        <EditorWrapper className={styles.editor} onClick={() => editor.chain().focus().run()}>
-          <EditorContent editor={editor} />
-        </EditorWrapper>
+      <div ref={anchorRef} className="relative flex-1 min-h-0 flex flex-col" onMouseDown={handleEditorMouseDown}>
+        <EditorSurface className={styles.editor} onClick={() => editor.chain().focus().run()}>
+          <Gutter ref={gutterRef} aria-hidden="true">
+            {lineMarks.map((m) => (
+              <LineNo key={m.n} style={{ top: `${m.top}px` }}>{m.n}</LineNo>
+            ))}
+          </Gutter>
+          <EditorArea ref={areaRef}>
+            <EditorContent editor={editor} />
+          </EditorArea>
+        </EditorSurface>
         {active && (
           <ManuscriptSuggestionPopover
             item={active.item}

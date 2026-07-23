@@ -1,17 +1,18 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import AppLayout from "./pages/AppLayout";
+import Home from "./pages/Home";
+import Onboarding from "./pages/Onboarding";
+import RootRedirect from "./features/AppLayout/RootRedirect";
 import Manuscripts from "./pages/Manuscripts";
 import Timeline from "./pages/Timeline";
 import MyLearning from "./pages/Learning";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import About from "./pages/About";
-import CountryPage from "./pages/CountryPage";
-import StatePage from "./pages/StatePage";
-import LocalGovernmentPage from "./pages/LocalGovernmentPage";
-import EthnicGroupPage from "./pages/EthnicGroupPage";
-import TribePage from "./pages/TribePage";
+import PlacePage from "./pages/PlacePage";
+import PeoplePage from "./pages/PeoplePage";
+import Explore from "./pages/Explore";
 import PageNotFound from "./pages/PageNotFound";
 
 export default function App() {
@@ -19,14 +20,14 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          <Route path="/" element={<Navigate to="/app/country" replace />} />
+          <Route path="/" element={<RootRedirect />} />
+          <Route path="welcome" element={<Onboarding />} />
 
           <Route path="app" element={<AppLayout />}>
-            <Route path="country" element={<CountryPage />} />
-            <Route path="state" element={<StatePage />} />
-            <Route path="local-government" element={<LocalGovernmentPage />} />
-            <Route path="ethnic-group" element={<EthnicGroupPage />} />
-            <Route path="tribe" element={<TribePage />} />
+            <Route index element={<Home />} />
+            <Route path="explore" element={<Explore />} />
+            <Route path="place/:id" element={<PlacePage />} />
+            <Route path="people/:id" element={<PeoplePage />} />
             <Route path="my-manuscripts" element={<Manuscripts />} />
             <Route path="my-timeline" element={<Timeline />} />
             <Route path="my-learning" element={<MyLearning />} />

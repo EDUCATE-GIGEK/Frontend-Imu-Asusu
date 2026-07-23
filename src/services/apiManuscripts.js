@@ -19,18 +19,18 @@ export async function getManuscriptsByUser(userId) {
   return data;
 }
 
-export async function createManuscript({ userId, title, manuscriptDescription, contexts, educationLevel, filePath, fileName }) {
+export async function createManuscript({ userId, title, manuscriptDescription, summary, contexts, educationLevel, filePath, fileName }) {
   const { data, error } = await supabase
     .from("manuscripts")
-    .insert({ user_id: userId, title, manuscript_description: manuscriptDescription, contexts, education_level: educationLevel || null, file_path: filePath ?? null, file_name: fileName ?? null })
+    .insert({ user_id: userId, title, manuscript_description: manuscriptDescription, summary: summary || null, contexts, education_level: educationLevel || null, file_path: filePath ?? null, file_name: fileName ?? null })
     .select()
     .single();
   if (error) throw new Error(error.message);
   return data;
 }
 
-export async function updateManuscript(id, { title, manuscriptDescription, contexts, educationLevel, filePath, fileName }) {
-  const patch = { title, manuscript_description: manuscriptDescription, contexts, education_level: educationLevel || null };
+export async function updateManuscript(id, { title, manuscriptDescription, summary, contexts, educationLevel, filePath, fileName }) {
+  const patch = { title, manuscript_description: manuscriptDescription, summary: summary || null, contexts, education_level: educationLevel || null };
   if (filePath !== undefined) patch.file_path = filePath;
   if (fileName !== undefined) patch.file_name = fileName;
   const { data, error } = await supabase

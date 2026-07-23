@@ -70,7 +70,7 @@ export default function Login() {
     setServerError("");
     try {
       await signInWithPassword({ email, password });
-      navigate("/app/country", { replace: true });
+      navigate("/app", { replace: true });
     } catch (err) {
       setServerError(err.message);
     }
@@ -81,7 +81,7 @@ export default function Login() {
     try {
       const data = await signUp({ email, password, name });
       if (data.session) {
-        navigate("/app/country", { replace: true });
+        navigate("/app", { replace: true });
       } else {
         setMode("verify");
       }

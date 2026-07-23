@@ -1,9 +1,10 @@
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
-import { GoChevronRight, GoChevronLeft, GoSignOut } from "react-icons/go";
+import { GoChevronRight, GoChevronLeft, GoSignOut, GoHome, GoPlus } from "react-icons/go";
 import tw from "tailwind-styled-components";
 import { useAuth } from "@/contexts/AuthContext";
 import { signOut } from "@/services/auth/signOut";
+import usePreferences from "@/hooks/usePreferences";
 
 const StyledDashboard = tw.div`
   h-screen bg-orange-background-100 overflow-hidden transition-all duration-300
@@ -45,7 +46,13 @@ const DropdownItem = tw.button`
 
 const Spacer = tw.div`flex-1`;
 
-const EXPLORE_PATHS = ["/app/country", "/app/state", "/app/local-government", "/app/ethnic-group", "/app/tribe"];
+const EXPLORE_PATHS = ["/app/place", "/app/people"];
+
+const AddRegionsItem = tw.button`
+  w-full text-left rounded-lg px-3 py-2 text-sm text-title opacity-50
+  hover:opacity-100 hover:bg-black/5 transition-all duration-150
+  bg-transparent border-none cursor-pointer flex items-center gap-1.5
+`;
 
 const LogoutBtn = tw.button`
   w-full text-left rounded-lg px-3 py-2.5 text-sm font-bold text-title
@@ -58,6 +65,8 @@ function Dashboard({ collapsed, onToggle }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { user } = useAuth();
+  const { prefs } = usePreferences();
+  const regions = prefs.regions;
 
   async function handleSignOut() {
     await signOut();
@@ -65,7 +74,10 @@ function Dashboard({ collapsed, onToggle }) {
   }
 
   const isExplorePath = EXPLORE_PATHS.some((p) => pathname.startsWith(p));
-  const [placesOpen, setPlacesOpen] = useState(false);
+  const [placesOpen, setPlacesOpen] = useState(true);
+
+  const regionPath = (r) =>
+    r.kind === "people" ? `/app/people/${r.id}` : `/app/place/${r.id}`;
 
   if (collapsed) {
     return (
@@ -87,6 +99,21 @@ function Dashboard({ collapsed, onToggle }) {
       </Header>
 
       <NavSection>
+        <NavLink
+          to="/app"
+          end
+          className={({ isActive }) =>
+            isActive
+              ? "block rounded-lg px-3 py-2.5 text-sm font-medium no-underline bg-orange-300/50 text-title flex items-center gap-2"
+              : "block rounded-lg px-3 py-2.5 text-sm font-medium no-underline text-title opacity-70 hover:opacity-100 hover:bg-black/5 transition-all duration-150 flex items-center gap-2"
+          }
+        >
+          <GoHome size={15} />
+          Home
+        </NavLink>
+      </NavSection>
+
+      <NavSection className="mt-6">
         <NavLabel>Explore</NavLabel>
 
         <NavBtn
@@ -101,22 +128,32 @@ function Dashboard({ collapsed, onToggle }) {
               transform: placesOpen ? "rotate(90deg)" : "rotate(0deg)",
             }}
           />
-          Places
+          Quick access
         </NavBtn>
 
         {placesOpen && (
           <DropdownContent>
-            <DropdownItem
-              type="button"
-              onClick={() =>
-                navigate("/app/country", {
-                  state: { country: "Nigeria", continent: "africa" },
-                })
-              }
-              className={isExplorePath ? "opacity-100! bg-orange-300/50! text-title!" : ""}
-            >
-              Nigeria →
-            </DropdownItem>
+            {regions.length === 0 ? (
+              <DropdownItem type="button" onClick={() => navigate("/welcome")}>
+                Choose regions →
+              </DropdownItem>
+            ) : (
+              <>
+                {regions.map((r) => (
+                  <DropdownItem
+                    key={`${r.kind}:${r.id}`}
+                    type="button"
+                    onClick={() => navigate(regionPath(r))}
+                    className={pathname === regionPath(r) ? "opacity-100! bg-orange-300/50! text-title!" : ""}
+                  >
+                    {r.name} →
+                  </DropdownItem>
+                ))}
+                <AddRegionsItem type="button" onClick={() => navigate("/welcome")}>
+                  <GoPlus size={13} /> Add regions
+                </AddRegionsItem>
+              </>
+            )}
           </DropdownContent>
         )}
       </NavSection>

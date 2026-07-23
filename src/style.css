@@ -73,4 +73,15 @@
     line-height: 1.7;
     color: var(--color-title);
   }
+
+  /* Soft fade when a view mounts (e.g. editor ⇄ library). Opacity only — a
+     transform would create a containing block and break fixed-position drawers. */
+  .view-fade {
+    animation: view-fade 0.2s ease-out;
+  }
+}
+
+@keyframes view-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
