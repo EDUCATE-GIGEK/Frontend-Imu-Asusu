@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { GoEye } from "react-icons/go";
 import tw from "tailwind-styled-components";
 import { getManuscriptFileUrl } from "@/services/storage/getManuscriptFileUrl";
 
@@ -11,6 +12,10 @@ const Card = tw.div`
 const TopRow = tw.div`flex items-baseline justify-between gap-3`;
 const CardTitle = tw.h3`font-heading text-base font-semibold text-title truncate`;
 const CardDate = tw.span`text-xs text-title opacity-40 shrink-0`;
+const MetaRow = tw.div`flex items-center gap-2 text-xs text-title opacity-50`;
+const PublicTag = tw.span`
+  rounded border border-grey-info-outline px-1.5 py-0.5 text-[10px] uppercase tracking-wide
+`;
 const CardSummary = tw.p`text-sm text-title opacity-70 leading-relaxed line-clamp-2 whitespace-pre-line`;
 const NoSummary = tw.p`text-sm text-title opacity-35 italic`;
 const Footer = tw.div`flex items-center justify-between gap-3 mt-0.5`;
@@ -60,6 +65,22 @@ export default function ManuscriptCard({ manuscript, onEdit, onDelete, isDeletin
         <CardTitle>{manuscript.title || "Untitled"}</CardTitle>
         <CardDate>{date}</CardDate>
       </TopRow>
+
+      {/* Shared manuscripts carry their Collaborate standing back into the
+          library, so the author sees what their work is doing out there. */}
+      {(manuscript.is_public || manuscript.forked_from) && (
+        <MetaRow>
+          {manuscript.is_public && <PublicTag>Public</PublicTag>}
+          {manuscript.is_public && (
+            <span className="inline-flex items-center gap-1">
+              ▲ {manuscript.upvote_count ?? 0} · ⑂ {manuscript.fork_count ?? 0} ·
+              <GoEye size={13} aria-hidden />
+              {manuscript.view_count ?? 0}
+            </span>
+          )}
+          {manuscript.forked_from && <span>Forked from another educator</span>}
+        </MetaRow>
+      )}
 
       {manuscript.summary ? (
         <CardSummary>{manuscript.summary}</CardSummary>

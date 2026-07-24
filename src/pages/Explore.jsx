@@ -69,7 +69,7 @@ export default function Explore() {
       {regions.length === 0 ? (
         <EmptyState>
           <EmptyText>You haven’t chosen any regions yet.</EmptyText>
-          <CtaBtn to="/welcome">
+          <CtaBtn to="/welcome?step=regions">
             <GoPlus size={15} /> Pick your regions
           </CtaBtn>
         </EmptyState>

@@ -41,6 +41,10 @@ export default function PlacePage() {
 
       <StatsRow>
         <StatItem>
+          <StatNumber>{entries.length}</StatNumber>
+          <StatLabel>History Entries</StatLabel>
+        </StatItem>
+        <StatItem>
           <StatNumber>{children.length}</StatNumber>
           <StatLabel>Places</StatLabel>
         </StatItem>
@@ -48,11 +52,9 @@ export default function PlacePage() {
           <StatNumber>{peoples.length}</StatNumber>
           <StatLabel>People</StatLabel>
         </StatItem>
-        <StatItem>
-          <StatNumber>{entries.length}</StatNumber>
-          <StatLabel>History Entries</StatLabel>
-        </StatItem>
       </StatsRow>
+
+      <HistorySection entries={entries} nodeId={id} nodeKind="place" />
 
       <FacetedNavList
         label="Places"
@@ -67,8 +69,6 @@ export default function PlacePage() {
         categoryOf={(p) => p.designation?.label}
         to={(p) => navigate(`/app/people/${p.id}`)}
       />
-
-      <HistorySection entries={entries} nodeId={id} nodeKind="place" />
     </>
   );
 }

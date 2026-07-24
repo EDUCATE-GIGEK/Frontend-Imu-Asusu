@@ -1,27 +1,29 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useOutletContext, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import tw from "tailwind-styled-components";
 import { getTimelineForPeople } from "@/services/apiTimeline";
 import { getAllPeoples } from "@/services/apiPeoples";
-import { getEntryCountsByPeople } from "@/services/apiEntries";
+import { getEntryCountsByPeople, getPeriodRangesByPeople } from "@/services/apiEntries";
 import usePreferences from "@/hooks/usePreferences";
 import TimelineGraph from "@/features/Timeline/TimelineGraph";
+import TimelineGroupCard from "@/features/Timeline/TimelineGroupCard";
 import EntryDrawer from "@/features/Timeline/EntryDrawer";
+import NotesLayer from "@/features/Notes/NotesLayer";
+import { useNotes } from "@/features/Notes/useNotes";
+import { useAuth } from "@/contexts/AuthContext";
 import { RELATION_STYLE, CONTRADICTS_COLOR } from "@/features/Timeline/timelineLayout";
 import Spinner from "@/ui/Spinner";
 
 const PageTitle = tw.h1`text-3xl font-bold text-title mb-2`;
 const Subtitle = tw.p`text-sm text-title opacity-60 leading-relaxed mb-5 max-w-2xl`;
 
-const GroupBar = tw.div`flex flex-wrap items-center gap-2 mb-5`;
-const GroupTab = tw.button`
-  text-sm rounded-full px-3.5 py-1.5 border cursor-pointer transition-colors font-body
-  ${(p) =>
-    p.$on
-      ? "border-title text-title bg-orange-background-100"
-      : "border-grey-info-outline text-title opacity-60 bg-transparent hover:opacity-100"}
+// Same card grid as the manuscripts list, so the two libraries read alike.
+const Grid = tw.div`grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 mt-6`;
+
+const BackBtn = tw.button`
+  text-sm text-title opacity-55 hover:opacity-100 transition-opacity mb-3 bg-transparent border-0 cursor-pointer p-0
 `;
-const Count = tw.span`ml-1.5 text-[11px] opacity-60 tabular-nums`;
 
 const Legend = tw.div`flex flex-wrap items-center gap-x-4 gap-y-1.5 mb-4`;
 const LegendItem = tw.span`flex items-center gap-1.5 text-[11px] text-title opacity-60`;
@@ -35,8 +37,24 @@ const LEGEND = ["caused", "followed_by", "derived_from", "contradicts"];
 
 export default function Timeline() {
   const { prefs } = usePreferences();
+  const { profile } = useAuth();
+  // null = gallery of timeline cards; a group id = that group's graph open.
   const [activeId, setActiveId] = useState(null);
   const [selected, setSelected] = useState(null);
+  // Set once from a deep link (?group=&note=) — e.g. Edit from the notes library.
+  const [focusNoteId, setFocusNoteId] = useState(null);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    const group = searchParams.get("group");
+    const note = searchParams.get("note");
+    if (group) setActiveId(group);
+    if (note) setFocusNoteId(note);
+    // Consume the params into state and clean the URL, so the focus fires once.
+    if (group || note) setSearchParams({}, { replace: true });
+    // Mount only: read the initial params and then drop them.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const { data: peoples = [], isLoading: loadingPeoples } = useQuery({
     queryKey: ["all-peoples"],
@@ -46,6 +64,10 @@ export default function Timeline() {
     queryKey: ["entry-counts-by-people"],
     queryFn: getEntryCountsByPeople,
   });
+  const { data: ranges = new Map() } = useQuery({
+    queryKey: ["entry-period-ranges-by-people"],
+    queryFn: getPeriodRangesByPeople,
+  });
 
   // Groups the user actually saved come first; any other group with readable
   // entries stays reachable, so a fresh visitor is never shown an empty page.
@@ -54,12 +76,18 @@ export default function Timeline() {
       (prefs.regions ?? []).filter((r) => r.kind === "people").map((r) => r.id),
     );
     return peoples
-      .map((p) => ({ ...p, count: counts.get(p.id) ?? 0, saved: savedIds.has(p.id) }))
+      .map((p) => ({
+        ...p,
+        count: counts.get(p.id) ?? 0,
+        range: ranges.get(p.id) ?? null,
+        saved: savedIds.has(p.id),
+      }))
       .filter((p) => p.count > 0)
       .sort((a, b) => b.saved - a.saved || b.count - a.count || a.name.localeCompare(b.name));
-  }, [peoples, counts, prefs.regions]);
+  }, [peoples, counts, ranges, prefs.regions]);
 
-  const activeGroup = groups.find((g) => g.id === activeId) ?? groups[0] ?? null;
+  // No fallback to groups[0]: with nothing chosen we show the gallery, not a graph.
+  const activeGroup = groups.find((g) => g.id === activeId) ?? null;
 
   const { data: timeline, isLoading: loadingTimeline } = useQuery({
     queryKey: ["timeline", activeGroup?.id],
@@ -72,12 +100,69 @@ export default function Timeline() {
     [timeline],
   );
 
+  // What the AI reads to ground a note: the current group's entries by title and
+  // summary. Built here where the timeline data already lives, passed down to the
+  // notes overlay for its (not-yet-built) AI panel.
+  const contextText = useMemo(() => {
+    if (!activeGroup || !timeline) return "";
+    const lines = (timeline.entries ?? []).map((e) =>
+      e.summary ? `${e.title} — ${e.summary}` : e.title,
+    );
+    return `Timeline: ${activeGroup.name}\n${lines.join("\n")}`;
+  }, [activeGroup, timeline]);
+
+  // Shared with NotesLayer via the same react-query key (same user + context), so
+  // there is one source of truth. Used to let the entry drawer add a note too.
+  const { notes, addNote, atCapacity: notesAtCapacity, isAnon: notesAnon } = useNotes({
+    userId: profile?.id,
+    contextType: "timeline",
+    contextId: activeGroup?.id,
+  });
+  // For a visitor, hitting the one-note cap is an invitation to sign in, not a
+  // dead end — the drawer button reflects that and routes to login.
+  const notesNeedLogin = notesAnon && notesAtCapacity;
+
+  // Notes float over the graph and need room — once a note is open, collapse the
+  // sidebar. Only fires on the transition (or a load with existing notes); it does
+  // not re-collapse if the user later reopens the sidebar with notes still up.
+  const { setCollapsed } = useOutletContext();
+  useEffect(() => {
+    if (notes.length > 0) setCollapsed(true);
+  }, [notes.length, setCollapsed]);
+
+  function openGroup(group) {
+    setActiveId(group.id);
+    setSelected(null);
+  }
+  function backToGallery() {
+    setActiveId(null);
+    setSelected(null);
+  }
+
+  const navigate = useNavigate();
+
+  function handleAddNoteFromEntry() {
+    if (notesNeedLogin) {
+      navigate("/login");
+      return;
+    }
+    if (!selected) return;
+    // Start empty, but record where it came from (group + entry) so a later Save
+    // can file it under that context. The drawer stays open (it sits on the right;
+    // new notes spawn top-left, so they don't overlap).
+    addNote({
+      contextLabel: activeGroup.name,
+      sourceEntryId: selected.id,
+      sourceEntryTitle: selected.title,
+    });
+  }
+
   if (loadingPeoples || loadingCounts) return <Spinner />;
 
   if (groups.length === 0) {
     return (
       <div>
-        <PageTitle>Timeline</PageTitle>
+        <PageTitle>Timelines</PageTitle>
         <Empty>
           No published entries yet. Entries appear here once their workflow status
           is set to published.
@@ -86,31 +171,36 @@ export default function Timeline() {
     );
   }
 
+  // Gallery: pick a timeline to open.
+  if (!activeGroup) {
+    return (
+      <div>
+        <PageTitle>Timelines</PageTitle>
+        <Subtitle>
+          Each card is a group&apos;s history, arranged by time and joined by the
+          relationships between its entries. Open one to explore the graph and take
+          notes.
+        </Subtitle>
+        <Grid>
+          {groups.map((g) => (
+            <TimelineGroupCard key={g.id} group={g} onOpen={openGroup} />
+          ))}
+        </Grid>
+      </div>
+    );
+  }
+
+  // Detail: one group's graph.
   return (
     <div>
-      <PageTitle>Timeline</PageTitle>
+      <BackBtn type="button" onClick={backToGallery}>
+        ← All timelines
+      </BackBtn>
+      <PageTitle>{activeGroup.name}</PageTitle>
       <Subtitle>
-        The same entries you can browse in Explore, arranged by time and joined by
-        the relationships between them — what caused what, what followed what, and
-        where accounts contradict each other.
+        Entries arranged by time and joined by their relationships — what caused
+        what, what followed what, and where accounts contradict each other.
       </Subtitle>
-
-      <GroupBar>
-        {groups.map((g) => (
-          <GroupTab
-            key={g.id}
-            type="button"
-            $on={g.id === activeGroup?.id}
-            onClick={() => {
-              setActiveId(g.id);
-              setSelected(null);
-            }}
-          >
-            {g.name}
-            <Count>{g.count}</Count>
-          </GroupTab>
-        ))}
-      </GroupBar>
 
       <Legend>
         {LEGEND.map((kind) => {
@@ -160,6 +250,16 @@ export default function Timeline() {
         entriesById={entriesById}
         onSelect={setSelected}
         onClose={() => setSelected(null)}
+        onAddNote={handleAddNoteFromEntry}
+        notesAtCapacity={notesAtCapacity}
+        notesNeedLogin={notesNeedLogin}
+      />
+
+      <NotesLayer
+        contextType="timeline"
+        contextId={activeGroup.id}
+        contextText={contextText}
+        focusNoteId={focusNoteId}
       />
     </div>
   );

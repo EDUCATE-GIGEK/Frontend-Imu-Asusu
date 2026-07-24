@@ -18,6 +18,14 @@ const Label = tw.label`text-sm font-semibold text-title`;
 const SectionLabel = tw.p`text-sm font-semibold text-title`;
 const Hint = tw.p`text-xs text-title opacity-50`;
 const Select = tw.select`border border-grey-info-outline rounded-lg px-3 py-2 text-sm text-title focus:outline-none focus:border-orange-400 bg-white`;
+const VisibilityRow = tw.div`grid grid-cols-2 gap-2 mt-1`;
+const VisibilityBtn = tw.button`
+  rounded-lg border border-grey-info-outline bg-white px-3 py-2 text-sm text-title
+  cursor-pointer text-left transition-colors hover:border-orange-300
+  data-[on=true]:border-orange-400 data-[on=true]:bg-orange-background-100
+`;
+const VisibilityName = tw.span`block font-semibold`;
+const VisibilityNote = tw.span`block text-xs opacity-55 mt-0.5`;
 const PanelFooter = tw.div`border-t border-grey-info-outline px-5 py-4`;
 const DoneBtn = tw.button`w-full bg-title text-white rounded-lg px-5 py-2 text-sm font-semibold cursor-pointer border-0`;
 
@@ -43,6 +51,8 @@ export default function ManuscriptDetailsDrawer({
   educationLevels,
   educationLevel,
   onEducationLevelChange,
+  isPublic,
+  onIsPublicChange,
 }) {
   // Close on Escape so the drawer never traps the user away from the editor.
   useEffect(() => {
@@ -103,6 +113,36 @@ export default function ManuscriptDetailsDrawer({
                 <option key={level.value} value={level.value}>{level.label}</option>
               ))}
             </Select>
+          </FieldWrapper>
+
+          <FieldWrapper>
+            <SectionLabel>Visibility</SectionLabel>
+            <Hint>
+              Public manuscripts appear on Collaborate, where any educator can read, upvote and
+              fork them. Yours stays yours — a fork is their own copy.
+            </Hint>
+            <VisibilityRow role="radiogroup" aria-label="Visibility">
+              <VisibilityBtn
+                type="button"
+                role="radio"
+                aria-checked={!isPublic}
+                data-on={!isPublic}
+                onClick={() => onIsPublicChange(false)}
+              >
+                <VisibilityName>Private</VisibilityName>
+                <VisibilityNote>Only you can see it.</VisibilityNote>
+              </VisibilityBtn>
+              <VisibilityBtn
+                type="button"
+                role="radio"
+                aria-checked={!!isPublic}
+                data-on={!!isPublic}
+                onClick={() => onIsPublicChange(true)}
+              >
+                <VisibilityName>Public</VisibilityName>
+                <VisibilityNote>Shared on Collaborate.</VisibilityNote>
+              </VisibilityBtn>
+            </VisibilityRow>
           </FieldWrapper>
         </PanelBody>
 

@@ -49,6 +49,10 @@ export default function PeoplePage() {
 
       <StatsRow>
         <StatItem>
+          <StatNumber>{entries.length}</StatNumber>
+          <StatLabel>History Entries</StatLabel>
+        </StatItem>
+        <StatItem>
           <StatNumber>{places.length}</StatNumber>
           <StatLabel>Homelands</StatLabel>
         </StatItem>
@@ -56,11 +60,9 @@ export default function PeoplePage() {
           <StatNumber>{languages.length}</StatNumber>
           <StatLabel>Languages</StatLabel>
         </StatItem>
-        <StatItem>
-          <StatNumber>{entries.length}</StatNumber>
-          <StatLabel>History Entries</StatLabel>
-        </StatItem>
       </StatsRow>
+
+      <HistorySection entries={entries} nodeId={id} nodeKind="people" />
 
       {children.length > 0 && (
         <GroupedList label="Sub-groups">
@@ -121,8 +123,6 @@ export default function PeoplePage() {
           </Spacer>
         </GroupedList>
       )}
-
-      <HistorySection entries={entries} nodeId={id} nodeKind="people" />
     </>
   );
 }

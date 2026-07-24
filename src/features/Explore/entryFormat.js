@@ -29,6 +29,13 @@ export function formatPeriod(entry) {
   return era ? ERA_LABEL[era] ?? era : null;
 }
 
+// A span of years for a whole group → "480 BCE–2001", or a single year when the
+// group's entries all sit in one year. Null when there are no dated entries.
+export function formatYearRange(min, max) {
+  if (min == null || max == null) return null;
+  return min === max ? year(min) : `${year(min)}–${year(max)}`;
+}
+
 export function eraLabel(era) {
   if (!era) return null;
   return ERA_LABEL[era] ?? era;
