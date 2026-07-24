@@ -39,3 +39,28 @@ export async function getEntryCountsByPeople() {
   }
   return counts;
 }
+
+// Earliest / latest year each people group's visible entries cover, as a
+// Map(people_id -> { min, max }). Groups whose entries are all undated (no
+// period_start/_end — common for oral tradition) simply don't appear. Same
+// RLS-filtered read as the counts, used to label the timeline gallery cards.
+export async function getPeriodRangesByPeople() {
+  const { data, error } = await supabase
+    .from("entries")
+    .select("people_id, period_start, period_end")
+    .not("people_id", "is", null);
+  if (error) throw new Error(error.message);
+
+  const ranges = new Map();
+  for (const { people_id, period_start, period_end } of data ?? []) {
+    const years = [period_start, period_end].filter((y) => y != null);
+    if (years.length === 0) continue;
+    const cur = ranges.get(people_id) ?? { min: Infinity, max: -Infinity };
+    for (const y of years) {
+      cur.min = Math.min(cur.min, y);
+      cur.max = Math.max(cur.max, y);
+    }
+    ranges.set(people_id, cur);
+  }
+  return ranges;
+}

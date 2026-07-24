@@ -1,8 +1,15 @@
 // User onboarding preferences (chosen regions + intent).
 //
-// Persisted in localStorage for now so the flow works for anonymous visitors and
-// needs no schema change. This module is the single seam where a future Supabase
-// sync would hook in — keep all reads/writes going through here.
+// Two stores, one shape. An anonymous visitor has only localStorage — that is
+// their durable copy, and it is what lets onboarding work before there is an
+// account to attach it to. Once someone signs in, `public.user.preferences` is
+// the source of truth and localStorage becomes a mirror, so reads stay
+// synchronous and every consumer of usePreferences keeps its current shape.
+//
+// This module is the only place that knows about either store. Keep all
+// reads/writes going through here.
+
+import supabase from "./supabase";
 
 const STORAGE_KEY = "imu.prefs";
 const VERSION = 1;
@@ -21,18 +28,25 @@ function emptyPrefs() {
   return { version: VERSION, regions: [], intent: null, completedAt: null };
 }
 
+// Be forgiving about shape — a malformed/older blob falls back to empty. Used
+// for both stores, since the database holds the same object localStorage does.
+function normalize(parsed) {
+  if (!parsed || typeof parsed !== "object") return emptyPrefs();
+  return {
+    version: VERSION,
+    regions: Array.isArray(parsed.regions) ? parsed.regions : [],
+    intent: INTENTS.includes(parsed.intent) ? parsed.intent : null,
+    completedAt: parsed.completedAt ?? null,
+  };
+}
+
+// ── Local store ─────────────────────────────────────────────────────────────
+
 export function getPreferences() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return emptyPrefs();
-    const parsed = JSON.parse(raw);
-    // Be forgiving about shape — a malformed/older blob falls back to empty.
-    return {
-      version: VERSION,
-      regions: Array.isArray(parsed.regions) ? parsed.regions : [],
-      intent: INTENTS.includes(parsed.intent) ? parsed.intent : null,
-      completedAt: parsed.completedAt ?? null,
-    };
+    return normalize(JSON.parse(raw));
   } catch {
     return emptyPrefs();
   }
@@ -55,8 +69,34 @@ export function clearPreferences() {
   window.dispatchEvent(new Event(PREFS_CHANGED_EVENT));
 }
 
-// Onboarding is "done" once the user has picked at least one region.
-export function hasCompletedOnboarding() {
-  const { regions } = getPreferences();
-  return regions.length > 0;
+// ── Remote store ────────────────────────────────────────────────────────────
+
+// `user_preferences` rather than a column on `public.user`, because that table
+// is world-readable and a person's regions of interest are nobody else's
+// business. Owner-only RLS; nothing here ever reads another user's row.
+
+// Returns null when the user has never saved preferences, which is what tells
+// the caller to adopt whatever is in localStorage instead of overwriting it.
+export async function fetchRemotePreferences(userId) {
+  const { data, error } = await supabase
+    .from("user_preferences")
+    .select("preferences")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data?.preferences ? normalize(data.preferences) : null;
 }
+
+export async function saveRemotePreferences(userId, prefs) {
+  const { error } = await supabase
+    .from("user_preferences")
+    .upsert({ user_id: userId, preferences: prefs, updated_at: new Date().toISOString() });
+  if (error) throw new Error(error.message);
+  return prefs;
+}
+
+// Note: there is deliberately no synchronous `hasCompletedOnboarding()` helper.
+// For a signed-in user that question can only be answered once their stored
+// preferences have loaded, so it belongs to usePreferences (`isSyncing` +
+// `prefs.regions`), not to a localStorage-only read that would answer "no" for
+// someone who onboarded on another device.

@@ -2,6 +2,7 @@ import { useState } from "react";
 import Dashboard from "@/features/AppLayout/Dashboard";
 import { Outlet, useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import useAnonMigration from "@/hooks/useAnonMigration";
 import tw from "tailwind-styled-components";
 
 const StyledAppLayout = tw.div`
@@ -25,7 +26,10 @@ export default function AppLayout() {
   const [bleed, setBleed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+
+  // Claim any work done while signed out into the account, once logged in.
+  useAnonMigration();
 
   // Hide Back on the hub itself; show it on every deeper page.
   const showBack = location.pathname !== "/app";
@@ -47,7 +51,7 @@ export default function AppLayout() {
                 ← Back
               </button>
             )}
-            {!user && (
+            {!isLoading && !user && (
               <Link
                 to="/login"
                 className="text-sm font-semibold text-title border-2 border-grey-info-outline rounded-lg px-4 py-1.5 hover:border-orange-300 transition-colors"
@@ -58,7 +62,7 @@ export default function AppLayout() {
           </TopBar>
         )}
         <OutletArea $bleed={bleed}>
-          <Outlet context={{ setBleed }} />
+          <Outlet context={{ setBleed, setCollapsed }} />
         </OutletArea>
       </ContentWrapper>
     </StyledAppLayout>

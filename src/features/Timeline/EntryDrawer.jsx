@@ -38,10 +38,20 @@ const RelTitle = tw.button`
 const Foot = tw.div`px-5 py-4 border-t border-grey-info-outline`;
 const NotesBtn = tw.button`
   w-full bg-title text-white text-sm font-semibold px-4 py-2 rounded-md
-  border-0 cursor-pointer opacity-40 cursor-not-allowed
+  border-0 cursor-pointer hover:opacity-90 transition-opacity
+  disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:opacity-40
 `;
 
-export default function EntryDrawer({ entry, relationships, entriesById, onSelect, onClose }) {
+export default function EntryDrawer({
+  entry,
+  relationships,
+  entriesById,
+  onSelect,
+  onClose,
+  onAddNote,
+  notesAtCapacity = false,
+  notesNeedLogin = false,
+}) {
   if (!entry) return null;
 
   const connected = relationships
@@ -139,8 +149,25 @@ export default function EntryDrawer({ entry, relationships, entriesById, onSelec
       </Body>
 
       <Foot>
-        <NotesBtn type="button" disabled title="Notes are not built yet">
-          Take notes — coming next
+        <NotesBtn
+          type="button"
+          onClick={onAddNote}
+          // A visitor at their one-note cap can still click — it takes them to
+          // log in. Only a signed-in user's cap actually disables the button.
+          disabled={notesAtCapacity && !notesNeedLogin}
+          title={
+            notesNeedLogin
+              ? "Log in to add more notes"
+              : notesAtCapacity
+                ? "Note limit reached for this timeline"
+                : undefined
+          }
+        >
+          {notesNeedLogin
+            ? "Log in to add more notes"
+            : notesAtCapacity
+              ? "Note limit reached"
+              : "Add Notes"}
         </NotesBtn>
       </Foot>
     </Panel>

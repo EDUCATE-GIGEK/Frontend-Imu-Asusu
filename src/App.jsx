@@ -6,6 +6,7 @@ import Onboarding from "./pages/Onboarding";
 import RootRedirect from "./features/AppLayout/RootRedirect";
 import Manuscripts from "./pages/Manuscripts";
 import Timeline from "./pages/Timeline";
+import Notes from "./pages/Notes";
 import MyLearning from "./pages/Learning";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
@@ -13,6 +14,7 @@ import About from "./pages/About";
 import PlacePage from "./pages/PlacePage";
 import PeoplePage from "./pages/PeoplePage";
 import Explore from "./pages/Explore";
+import Collaborate from "./pages/Collaborate";
 import PageNotFound from "./pages/PageNotFound";
 
 export default function App() {
@@ -26,9 +28,11 @@ export default function App() {
           <Route path="app" element={<AppLayout />}>
             <Route index element={<Home />} />
             <Route path="explore" element={<Explore />} />
+            <Route path="collaborate" element={<Collaborate />} />
             <Route path="place/:id" element={<PlacePage />} />
             <Route path="people/:id" element={<PeoplePage />} />
             <Route path="my-manuscripts" element={<Manuscripts />} />
+            <Route path="my-notes" element={<Notes />} />
             <Route path="my-timeline" element={<Timeline />} />
             <Route path="my-learning" element={<MyLearning />} />
             <Route path="settings" element={<Settings />} />

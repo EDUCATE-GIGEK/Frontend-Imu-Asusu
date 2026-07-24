@@ -14,10 +14,18 @@ import Spinner from "@/ui/Spinner";
 import { getAllPlaces } from "@/services/apiPlaces";
 import { getAllPeoples } from "@/services/apiPeoples";
 import { getManuscriptsByUser, createManuscript, updateManuscript, deleteManuscript } from "@/services/apiManuscripts";
+import {
+  getAnonManuscript,
+  setAnonManuscript,
+  clearAnonManuscript,
+  anonManuscriptRow,
+  ANON_MANUSCRIPT_CHANGED,
+} from "@/services/anonManuscript";
 import { uploadManuscriptFile } from "@/services/storage/uploadManuscriptFile";
 import { useManuscriptWritingAssist } from "@/hooks/useManuscriptWritingAssist";
 import { useManuscriptFactCheck } from "@/hooks/useManuscriptFactCheck";
 import { useManuscriptGenerate } from "@/hooks/useManuscriptGenerate";
+import { EDUCATION_LEVELS } from "@/features/Manuscripts/educationLevels";
 
 // ── Styled components ────────────────────────────────────────────────────────
 const PageWrapper = tw.div``;
@@ -48,15 +56,7 @@ const LoginPromptText = tw.p`text-sm text-title`;
 const ManuscriptList = tw.div`grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 mt-6`;
 const EmptyState = tw.p`text-sm text-title opacity-40 mt-6`;
 
-const EDUCATION_LEVELS = [
-  { value: "preschool", label: "Preschool" },
-  { value: "kindergarten", label: "Kindergarten" },
-  { value: "high_school", label: "High School" },
-  { value: "undergrad", label: "Undergrad" },
-  { value: "grad", label: "Grad" },
-];
-
-const EMPTY_DRAFT = { title: "", description: "", summary: "", places: [], peoples: [], educationLevel: "" };
+const EMPTY_DRAFT = { title: "", description: "", summary: "", places: [], peoples: [], educationLevel: "", isPublic: false };
 
 const stripHtml = (html) => (html ?? "").replace(/<[^>]*>/g, "").trim();
 
@@ -69,6 +69,7 @@ function snapshotOf(values) {
     places: values.places ?? [],
     peoples: values.peoples ?? [],
     educationLevel: values.educationLevel || "",
+    isPublic: !!values.isPublic,
   };
 }
 const sameSnapshot = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -81,6 +82,7 @@ function draftFromManuscript(m) {
     description: m.manuscript_description ?? "",
     summary: m.summary ?? "",
     educationLevel: m.education_level ?? "",
+    isPublic: !!m.is_public,
     places: m.contexts?.places ?? [],
     peoples: m.contexts?.peoples ?? [],
   };
@@ -103,6 +105,9 @@ export default function Manuscripts() {
   const [aiPopover, setAiPopover] = useState(null); // 'facts' | 'assist' | null
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [saveStatusMap, setSaveStatusMap] = useState({}); // tabId -> 'saving'|'saved'|'error'
+  // The signed-out visitor's single manuscript, mirrored from localStorage so the
+  // library reflects it without a query (they have no DB rows to fetch).
+  const [anonManuscript, setAnonManuscriptState] = useState(getAnonManuscript);
   const fileInputRef = useRef(null);
   const savingTabs = useRef(new Set()); // tabIds with a save in flight (dedupe)
   const savedTimers = useRef({}); // tabId -> timeout clearing its "Saved ✓" flag
@@ -110,6 +115,18 @@ export default function Manuscripts() {
   const { register, reset, setValue, getValues, watch, formState: { errors } } = useForm({
     defaultValues: EMPTY_DRAFT,
   });
+
+  // Keep the mirror in sync with writes from elsewhere (migration on login,
+  // another tab). Same-tab writes also update it directly in saveTab/handleDelete.
+  useEffect(() => {
+    const sync = () => setAnonManuscriptState(getAnonManuscript());
+    window.addEventListener(ANON_MANUSCRIPT_CHANGED, sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener(ANON_MANUSCRIPT_CHANGED, sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
 
   const activeTab = openTabs.find((t) => t.tabId === activeTabId) ?? null;
   const activeManuscriptId = activeTab?.manuscriptId ?? undefined;
@@ -127,6 +144,7 @@ export default function Manuscripts() {
   const description = watch("description") ?? "";
   const summary = watch("summary") ?? "";
   const educationLevel = watch("educationLevel");
+  const isPublic = watch("isPublic") ?? false;
   const audience = educationLevel || null;
   const educationLabel = EDUCATION_LEVELS.find((l) => l.value === educationLevel)?.label ?? null;
   const hasContent = stripHtml(description).length > 0;
@@ -203,12 +221,38 @@ export default function Manuscripts() {
   // Persist a tab given an explicit snapshot. Deduped per tab so a burst of edits
   // (or a new tab's first save) can't create the same manuscript twice.
   async function saveTab(tabId, snapshot) {
-    if (savingTabs.current.has(tabId) || !profile?.id) return;
+    if (savingTabs.current.has(tabId)) return;
     const tab = openTabsRef.current.find((t) => t.tabId === tabId);
     if (!tab) return;
     const meaningful = snapshot.title.trim() || stripHtml(snapshot.description) || tab.pendingFile;
     if (!meaningful) return;
     if (sameSnapshot(snapshot, tab.savedSnapshot) && !tab.pendingFile) return;
+
+    // Signed-out visitor: their one manuscript autosaves to localStorage, never
+    // the DB. No file (uploads need auth) and no "public" (Collaborate is the
+    // account's) — both wait until they sign in and it migrates.
+    if (!profile?.id) {
+      setAnonManuscriptState(setAnonManuscript(snapshot));
+      setOpenTabs((prev) =>
+        prev.map((t) =>
+          t.tabId === tabId
+            ? { ...t, manuscriptId: "anon", pendingFile: null, savedSnapshot: snapshot, draft: { ...t.draft, ...snapshot } }
+            : t,
+        ),
+      );
+      setSaveStatusMap((m) => ({ ...m, [tabId]: "saved" }));
+      if (savedTimers.current[tabId]) clearTimeout(savedTimers.current[tabId]);
+      savedTimers.current[tabId] = setTimeout(() => {
+        delete savedTimers.current[tabId];
+        setSaveStatusMap((m) => {
+          if (m[tabId] !== "saved") return m;
+          const next = { ...m };
+          delete next[tabId];
+          return next;
+        });
+      }, 1800);
+      return;
+    }
 
     savingTabs.current.add(tabId);
     if (savedTimers.current[tabId]) {
@@ -230,6 +274,7 @@ export default function Manuscripts() {
         summary: snapshot.summary,
         contexts: { places: snapshot.places, peoples: snapshot.peoples },
         educationLevel: snapshot.educationLevel,
+        isPublic: snapshot.isPublic,
         filePath,
         fileName,
       };
@@ -274,14 +319,14 @@ export default function Manuscripts() {
   // savedSnapshot (after a save) re-runs this and catches any edits made mid-save.
   useEffect(() => {
     if (activeTabId == null || !activeTab) return undefined;
-    const snapshot = snapshotOf({ title, description, summary, places: selectedPlaces, peoples: selectedPeoples, educationLevel });
+    const snapshot = snapshotOf({ title, description, summary, places: selectedPlaces, peoples: selectedPeoples, educationLevel, isPublic });
     const dirty = !sameSnapshot(snapshot, activeTab.savedSnapshot) || !!activeTab.pendingFile;
     if (!dirty) return undefined;
     const tabId = activeTabId;
     const timer = setTimeout(() => saveTab(tabId, snapshot), 1000);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, description, summary, selectedPlaces, selectedPeoples, educationLevel, activeTabId, activeTab?.savedSnapshot, activeTab?.pendingFile]);
+  }, [title, description, summary, selectedPlaces, selectedPeoples, educationLevel, isPublic, activeTabId, activeTab?.savedSnapshot, activeTab?.pendingFile]);
 
   // Flush the active tab immediately (on tab switch / leaving the editor), so a
   // quick switch before the debounce fires never drops edits.
@@ -333,7 +378,9 @@ export default function Manuscripts() {
   }
 
   function addManuscript() {
-    if (!session) {
+    // A visitor gets one manuscript. Block the second — whether it's already
+    // saved locally or just open in a tab — and invite them to sign in instead.
+    if (!session && (anonManuscript || openTabs.length > 0)) {
       setShowLoginPrompt(true);
       return;
     }
@@ -419,12 +466,28 @@ export default function Manuscripts() {
     enabled: !!profile?.id,
   });
 
+  // Signed-in users see their own manuscripts; a visitor sees their single
+  // local one, shaped like a row so the same card renders it.
+  const displayManuscripts = session
+    ? manuscripts
+    : anonManuscript
+      ? [anonManuscriptRow(anonManuscript)]
+      : [];
+
   const deleteMutation = useMutation({
     mutationFn: (id) => deleteManuscript(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["manuscripts"] }),
   });
 
   function handleDelete(manuscriptId) {
+    // The visitor's manuscript is local — clear it and close its tab; no DB call.
+    if (manuscriptId === "anon") {
+      clearAnonManuscript();
+      setAnonManuscriptState(null);
+      const tab = openTabs.find((t) => t.manuscriptId === "anon");
+      if (tab) closeTab(tab.tabId);
+      return;
+    }
     deleteMutation.mutate(manuscriptId);
     const tab = openTabs.find((t) => t.manuscriptId === manuscriptId);
     if (tab) closeTab(tab.tabId);
@@ -464,8 +527,9 @@ export default function Manuscripts() {
     const parts = [];
     if (names.length) parts.push(names.slice(0, 2).join(", ") + (names.length > 2 ? ` +${names.length - 2}` : ""));
     if (educationLabel) parts.push(educationLabel);
+    if (isPublic) parts.push("Public");
     return parts.join(" · ");
-  }, [places, peoples, selectedPlaces, selectedPeoples, educationLabel]);
+  }, [places, peoples, selectedPlaces, selectedPeoples, educationLabel, isPublic]);
 
   const toolbarActions = (
     <>
@@ -570,6 +634,8 @@ export default function Manuscripts() {
           educationLevels={EDUCATION_LEVELS}
           educationLevel={educationLevel ?? ""}
           onEducationLevelChange={(val) => setValue("educationLevel", val)}
+          isPublic={isPublic}
+          onIsPublicChange={(val) => setValue("isPublic", val)}
         />
 
         <ManuscriptGenerateDrawer
@@ -599,32 +665,36 @@ export default function Manuscripts() {
       </p>
 
       <AddBtn type="button" onClick={addManuscript}>+ New manuscript</AddBtn>
+      {!session && (
+        <p className="text-sm text-title opacity-50 mt-2">
+          You can write one manuscript while signed out. Log in to keep it and add more — your draft
+          moves to your account when you do.
+        </p>
+      )}
       {showLoginPrompt && (
         <LoginPrompt>
-          <LoginPromptText>You need to be logged in to add a manuscript.</LoginPromptText>
+          <LoginPromptText>Sign in to create more manuscripts.</LoginPromptText>
           <PrimaryBtn type="button" onClick={() => navigate("/login")}>Log in</PrimaryBtn>
         </LoginPrompt>
       )}
 
-      {session && (
-        <ManuscriptList>
-          {loadingManuscripts ? (
-            <Spinner />
-          ) : manuscripts.length === 0 ? (
-            <EmptyState>No manuscripts yet. Add your first one above.</EmptyState>
-          ) : (
-            manuscripts.map((m) => (
-              <ManuscriptCard
-                key={m.id}
-                manuscript={m}
-                onEdit={openManuscript}
-                onDelete={handleDelete}
-                isDeleting={deleteMutation.isPending && deleteMutation.variables === m.id}
-              />
-            ))
-          )}
-        </ManuscriptList>
-      )}
+      <ManuscriptList>
+        {session && loadingManuscripts ? (
+          <Spinner />
+        ) : displayManuscripts.length === 0 ? (
+          <EmptyState>No manuscripts yet. Add your first one above.</EmptyState>
+        ) : (
+          displayManuscripts.map((m) => (
+            <ManuscriptCard
+              key={m.id}
+              manuscript={m}
+              onEdit={openManuscript}
+              onDelete={handleDelete}
+              isDeleting={deleteMutation.isPending && deleteMutation.variables === m.id}
+            />
+          ))
+        )}
+      </ManuscriptList>
     </PageWrapper>
   );
 }
