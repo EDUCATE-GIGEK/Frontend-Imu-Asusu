@@ -1,0 +1,122 @@
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap");
+
+@import "tailwindcss";
+
+@theme {
+  /* ── Colours ───────────────────────────────────────────────────────────────
+     The whole palette. Warm, low-contrast, paper-like. See STYLING.md. */
+  --color-grey-info-outline: #ced4da; /* card / input borders */
+  --color-orange-background-100: #fff4e6; /* warm surface tint (sidebar, chips) */
+  --color-orange-accent: #fdba74; /* primary accent (CTAs, focus, hover) */
+  --color-title: #63614f; /* the single text colour, opacity-graded for hierarchy */
+
+  /* ── Fonts ─────────────────────────────────────────────────────────────── */
+  --font-heading: "Playfair Display", Georgia, serif;
+  --font-body: "Lato", system-ui, sans-serif;
+
+  /* ── Fluid display type ────────────────────────────────────────────────────
+     The large sizes (2xl–6xl) are redefined as clamp(min, fluid, max): they
+     scale smoothly between a phone (~360px) and a laptop (~1280px), so every
+     heading in the app is responsive with no per-component breakpoints. The
+     MAX equals Tailwind's original px value, so the desktop look is unchanged;
+     only smaller viewports shrink. UI sizes (xs–xl) stay fixed on purpose —
+     labels and body copy should not scale. See STYLING.md for the full table.
+
+     token      mobile → desktop
+     text-2xl   20px  → 24px   section titles
+     text-3xl   24px  → 30px   page H1 (Manuscripts, Timeline, Collaborate, Notes)
+     text-4xl   28px  → 36px   page H1 (Home, Explore)
+     text-5xl   32px  → 48px   entity H1 (Place / People)
+     text-6xl   40px  → 60px   marketing hero (Welcome) */
+  --text-2xl: clamp(1.25rem, 1.15rem + 0.44vw, 1.5rem);
+  --text-2xl--line-height: 1.25;
+  --text-3xl: clamp(1.5rem, 1.34rem + 0.66vw, 1.875rem);
+  --text-3xl--line-height: 1.2;
+  --text-4xl: clamp(1.75rem, 1.54rem + 0.88vw, 2.25rem);
+  --text-4xl--line-height: 1.15;
+  --text-5xl: clamp(2rem, 1.59rem + 1.77vw, 3rem);
+  --text-5xl--line-height: 1.1;
+  --text-6xl: clamp(2.5rem, 1.98rem + 2.21vw, 3.75rem);
+  --text-6xl--line-height: 1.05;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-body);
+    color: var(--color-title);
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-heading);
+  }
+
+  p {
+    font-family: var(--font-heading);
+    font-style: italic;
+    line-height: 1.7;
+  }
+}
+
+@layer components {
+  .info-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.625rem 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--color-grey-info-outline);
+    background: white;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-title);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+    text-decoration: none;
+  }
+
+  .info-option:hover {
+    border-color: var(--color-orange-accent);
+    background-color: var(--color-orange-background-100);
+  }
+
+  .info-option--disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .hero-block {
+    border-radius: 1rem;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .hero-block {
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+  }
+
+  .hero-block p {
+    padding-left: 1rem;
+    border-left: 3px solid var(--color-orange-accent);
+    font-family: var(--font-heading);
+    font-size: clamp(1.0625rem, 1rem + 0.35vw, 1.25rem);
+    font-style: italic;
+    font-weight: 400;
+    line-height: 1.7;
+    color: var(--color-title);
+  }
+
+  /* Soft fade when a view mounts (e.g. editor ⇄ library). Opacity only — a
+     transform would create a containing block and break fixed-position drawers. */
+  .view-fade {
+    animation: view-fade 0.2s ease-out;
+  }
+}
+
+@keyframes view-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

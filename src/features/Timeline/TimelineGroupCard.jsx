@@ -1,5 +1,5 @@
 import tw from "tailwind-styled-components";
-import { formatYearRange } from "@/features/Explore/entryFormat";
+import { formatYearRange } from "@/utils/entryFormat";
 
 // A gallery card for one people group's (derived) timeline — same card idiom as
 // ManuscriptCard: the whole card opens it, a corner marks saved groups. There is

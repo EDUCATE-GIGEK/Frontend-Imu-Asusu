@@ -4,7 +4,7 @@ import {
   formatPeriod,
   verificationBadge,
   entryTypeLabel,
-} from "./entryFormat";
+} from "@/utils/entryFormat";
 
 // A single, richer history fact. Collapsed: type, date, provenance, the
 // endangered flag, title and a one-line summary. Expands in place to reveal the
