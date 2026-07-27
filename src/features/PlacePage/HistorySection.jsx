@@ -3,11 +3,13 @@ import { GoSearch, GoX } from "react-icons/go";
 import tw from "tailwind-styled-components";
 import GroupedList from "@/ui/GroupedList";
 import EntryCard from "./EntryCard";
-import { facetsFor, entryTypeLabel } from "./entryFormat";
+import { facetsFor, entryTypeLabel } from "@/utils/entryFormat";
 
-// The redesigned History block, shared by PeoplePage and PlacePage so the two
-// stop duplicating it. Exploring = *facts* (this), kept thematic; the temporal /
-// relational view is Timeline's job (out of scope here).
+// The redesigned History block. Lives here under features/PlacePage, but is
+// ALSO used on PeoplePage (src/pages/PeoplePage.jsx) — a shared feature filed
+// under one of its two consuming pages by convention. Exploring = *facts*
+// (this), kept thematic; the temporal / relational view is Timeline's job
+// (out of scope here).
 //
 // Three anti-redundancy moves:
 //   1. Thematic faceting — filter by kind of history, never by era.
@@ -43,7 +45,8 @@ const MoreBtn = tw.button`
 const EmptyNote = tw.p`text-sm text-title opacity-40`;
 
 const ACTIVE = "bg-orange-background-100 border-orange-accent text-title";
-const INACTIVE = "bg-white border-grey-info-outline text-title opacity-60 hover:opacity-100";
+const INACTIVE =
+  "bg-white border-grey-info-outline text-title opacity-60 hover:opacity-100";
 
 const stripHtml = (s) => (s ?? "").replace(/<[^>]*>/g, " ");
 
@@ -69,7 +72,13 @@ export default function HistorySection({ entries, nodeId, nodeKind }) {
   const q = query.trim().toLowerCase();
   const bySearch = (e) => {
     if (!q) return true;
-    return [e.title, e.summary, e.significance, stripHtml(e.body), entryTypeLabel(e.entry_type)]
+    return [
+      e.title,
+      e.summary,
+      e.significance,
+      stripHtml(e.body),
+      entryTypeLabel(e.entry_type),
+    ]
       .join(" ")
       .toLowerCase()
       .includes(q);
@@ -86,7 +95,9 @@ export default function HistorySection({ entries, nodeId, nodeKind }) {
     <GroupedList label="History">
       {endangeredCount > 0 && (
         <EndangeredNote>
-          ▲ {endangeredCount} endangered {endangeredCount === 1 ? "tradition" : "traditions"} — at risk of being lost
+          ▲ {endangeredCount} endangered{" "}
+          {endangeredCount === 1 ? "tradition" : "traditions"} — at risk of
+          being lost
         </EndangeredNote>
       )}
 
@@ -96,7 +107,7 @@ export default function HistorySection({ entries, nodeId, nodeKind }) {
           rows={searchExpanded ? 3 : 1}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search this history… (Shift+Enter to expand)"
+          placeholder="Search for historical entries"
           onKeyDown={(e) => {
             // Shift+Enter grows the box; plain Enter does nothing (search is live).
             if (e.key === "Enter" && e.shiftKey) setSearchExpanded(true);
@@ -141,7 +152,9 @@ export default function HistorySection({ entries, nodeId, nodeKind }) {
         </CardList>
       ) : (
         sub.length > 0 && (
-          <EmptyNote>Nothing recorded directly — see sub-groups below.</EmptyNote>
+          <EmptyNote>
+            Nothing recorded directly — see sub-groups below.
+          </EmptyNote>
         )
       )}
 

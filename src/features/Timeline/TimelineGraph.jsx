@@ -12,11 +12,11 @@ import {
 } from "./timelineLayout";
 // Shared with Explore — the same entry renders the same date string in both
 // surfaces, and BCE / approximate / era-fallback handling lives in one place.
-import { formatPeriod } from "@/features/Explore/entryFormat";
+import { formatPeriod } from "@/utils/entryFormat";
 
 // The canvas is centred in the page so the spine sits down the middle; it only
 // scrolls sideways when branches make it wider than the available column.
-const Scroll = tw.div`overflow-x-auto pb-4 flex justify-center`;
+const Scroll = tw.div`overflow-x-auto pb-4 flex justify-start sm:justify-center`;
 const Canvas = tw.div`relative shrink-0`;
 
 const Card = tw.button`

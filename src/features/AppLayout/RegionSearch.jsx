@@ -29,7 +29,7 @@ const NoMatch = tw.p`px-2.5 py-2 text-xs text-title opacity-40`;
 
 const MAX_RESULTS = 8;
 
-export default function RegionSearch() {
+export default function RegionSearch({ onNavigate }) {
   const navigate = useNavigate();
   const [q, setQ] = useState("");
 
@@ -49,6 +49,7 @@ export default function RegionSearch() {
   function go(m) {
     navigate(m.kind === "people" ? `/app/people/${m.id}` : `/app/place/${m.id}`);
     setQ("");
+    onNavigate?.();
   }
 
   return (

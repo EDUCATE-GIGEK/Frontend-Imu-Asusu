@@ -1,6 +1,6 @@
 import tw from "tailwind-styled-components";
 import { GoX } from "react-icons/go";
-import { formatPeriod, eraLabel, entryTypeLabel } from "@/features/Explore/entryFormat";
+import { formatPeriod, eraLabel, entryTypeLabel } from "@/utils/entryFormat";
 import { RELATION_STYLE } from "./timelineLayout";
 
 // A side drawer rather than a bottom sheet: the graph stays visible while an
