@@ -3,7 +3,7 @@
 React + Vite frontend for **Proj 1: Ịmụ-Asụsụ** (EDUCATE-GIGEK/Educate-Org) — an educational web platform for cultural preservation and history education, featuring timeline- and map-based exploration of human history.
 
 ## Deployed App
-(**Ịmụ-Asụsụ**)[https://frontend-imu-asusu.vercel.app/]
+[**Ịmụ-Asụsụ**](https://frontend-imu-asusu.vercel.app/)
 
 ## Stack
 
